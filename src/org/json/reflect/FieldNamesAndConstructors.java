@@ -9,6 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TreeMap;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
 * A basic Serializable helper class used with arrays of field names and 
@@ -28,7 +32,7 @@ public class FieldNamesAndConstructors implements Serializable {
     public transient Constructor<?>[] constructors;
     public transient Class<?>[][] constructorParamTypes;
     public transient Constructor<?> defaultConstructor;
-    public transient ArrayList<Map<Field,FieldNamesAndConstructors>> recursedFields = new ArrayList<Map<Field,FieldNamesAndConstructors>>();
+    public transient TreeMap<Integer, Map<Field,FieldNamesAndConstructors>> recursedFields = new TreeMap<Integer, Map<Field,FieldNamesAndConstructors>>();
     
 	public FieldNamesAndConstructors() {}
 	
@@ -49,7 +53,7 @@ public class FieldNamesAndConstructors implements Serializable {
 	            	return;
 	            if(DEBUG)
 	            	System.out.println("FieldNAmesAndConstructors Recursing superclass "+superClass);
-	            Field[] fields = superClass.getFields();
+	            Field[] fields = superClass.getDeclaredFields();
 	            for(Field nextField: fields) {
 	            	if(!nextField.getType().isPrimitive())
 	            		collectClasses(nextField, classes);
@@ -102,7 +106,7 @@ public class FieldNamesAndConstructors implements Serializable {
       			!Modifier.isFinal(fmods) ) {
       			fieldIndex.add(i);
       			if(field.getType() != java.lang.Object.class && !field.getType().equals(clazz)) // prevent cyclic stack overflow
-      				fields.recursedFields.add(getAllSuperclasses(field));
+      				fields.recursedFields.put(i, getAllSuperclasses(field));
       		}		
       	}
      	//
@@ -119,6 +123,28 @@ public class FieldNamesAndConstructors implements Serializable {
     		fields.fieldNames.add(fi.getName());
     	}
     	return fields;
+	}
+	
+	public JSONObject reflect(Object bean) throws JSONException, IllegalArgumentException, IllegalAccessException {
+		JSONObject o2 = new JSONObject();//(JSONObject) JSONObject.wrap(v);
+		for(int i = 0; i < fields.length; i++) {
+			fields[i].setAccessible(true);
+			Map<Field,FieldNamesAndConstructors> fnacMap = recursedFields.get(i);
+			if(fnacMap != null) {
+				FieldNamesAndConstructors fnac = fnacMap.get(fields[i]);
+				if(fnac != null) {
+					o2.put(fieldNames.get(i),fnac.reflect(bean));
+				}
+			} else
+				try {
+				o2.put(fieldNames.get(i),fields[i].get(bean));
+				} catch(IllegalArgumentException iae) {
+					System.out.println(iae.getMessage()+" for field "+fieldNames.get(i));
+				}
+		}
+		JSONObject o3 = new JSONObject();
+		o3.put(bean.getClass().getName(),o2);
+		return o3;
 	}
 	
 	@Override
@@ -140,8 +166,8 @@ public class FieldNamesAndConstructors implements Serializable {
 			sb.append(":");
 			sb.append(fieldTypes[i]);
 			sb.append("\r\n");
-			if(i < recursedFields.size()) {
-				Map<Field,FieldNamesAndConstructors> fnacMap = recursedFields.get(i);
+			Map<Field,FieldNamesAndConstructors> fnacMap = recursedFields.get(i);
+			if(fnacMap != null) {
 				FieldNamesAndConstructors fnac = fnacMap.get(fields[i]);
 				if(fnac != null) {
 					sb.append(fieldNames.get(i));
