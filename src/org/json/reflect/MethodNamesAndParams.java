@@ -14,7 +14,7 @@ import java.util.TreeMap;
 */
 public final class MethodNamesAndParams implements Serializable {
        static final long serialVersionUID = 8837760295724028863L;
-       private static boolean DEBUG = true;
+       private static boolean DEBUG = false;
        public transient Class<?> classClass;
        public String className;
        protected transient Method[] methods;

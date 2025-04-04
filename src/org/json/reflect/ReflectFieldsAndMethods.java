@@ -73,6 +73,9 @@ public final class ReflectFieldsAndMethods  {
     	public MethodNamesAndParams accessors;
     	public MethodNamesAndParams mutators;
     	public FieldNamesAndConstructors fields;
+    	public String toString() {
+    		return fields.toString();
+    	}
     }
     /**
      * Verify and invoke the proper

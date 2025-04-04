@@ -6,18 +6,20 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
 * A basic Serializable helper class used with arrays of field names and 
-* constructors for a target class.
+* constructors for a target class. Ignores transient fields by default, changeable by boolean field.
+* Entry point is factory method, leaving various fields and array populated.
 * @author Jonathan Groff Copyright (C) NeoCoreTechs, Inc. 2025
 */
 public class FieldNamesAndConstructors implements Serializable {
 	private static final long serialVersionUID = -738720973959363650L;
-	private static boolean DEBUG = true;
-	
+	private static boolean DEBUG = false;
+	public static boolean ignoreTransient = true; // process transient fields?
     public transient Class<?> classClass;
     public String className;
 	protected transient Field[] fields;
@@ -93,7 +95,7 @@ public class FieldNamesAndConstructors implements Serializable {
      	for(int i = fieldz.length-1; i >= 0 ; i--) {
      		Field field = fieldz[i];
       		int fmods = field.getModifiers();
-      		if(!Modifier.isTransient(fmods) &&
+      		if((ignoreTransient && !Modifier.isTransient(fmods)) &&
       			!Modifier.isStatic(fmods) &&
       			!Modifier.isVolatile(fmods) &&
       			!Modifier.isNative(fmods) &&
@@ -117,6 +119,38 @@ public class FieldNamesAndConstructors implements Serializable {
     		fields.fieldNames.add(fi.getName());
     	}
     	return fields;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder(className);
+		sb.append("\r\n");
+		if(defaultConstructor != null) {
+			sb.append(defaultConstructor);
+			sb.append("\r\n");
+		}
+		for(int i = 0; i < constructors.length; i++) {
+			sb.append(constructors[i]);
+			sb.append(":");
+			sb.append(Arrays.toString(constructorParamTypes[i]));
+			sb.append("\r\n");
+		}
+		for(int i = 0; i < fields.length; i++) {
+			sb.append(fieldNames.get(i));
+			sb.append(":");
+			sb.append(fieldTypes[i]);
+			sb.append("\r\n");
+			if(i < recursedFields.size()) {
+				Map<Field,FieldNamesAndConstructors> fnacMap = recursedFields.get(i);
+				FieldNamesAndConstructors fnac = fnacMap.get(fields[i]);
+				if(fnac != null) {
+					sb.append(fieldNames.get(i));
+					sb.append(".)");
+					sb.append(fnac.toString());
+				}
+			}
+		}
+		return sb.toString();
 	}
 
 }

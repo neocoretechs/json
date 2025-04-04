@@ -1,9 +1,11 @@
 package org.json.test;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.json.JSONObject;
 import org.json.reflect.ReflectFieldsAndMethods;
+import org.json.reflect.ReflectFieldsAndMethods.FieldsAndMethods;
 import org.json.test.data.BrokenToString;
 import org.json.test.data.ExceptionalBean;
 import org.json.test.data.Fraction;
@@ -45,55 +47,24 @@ public class BeanTest {
 		System.out.println("---END--");
 	}
 	
+	public static void testReflect(Object bean) {
+		Set<FieldsAndMethods> r = ReflectFieldsAndMethods.reflect(bean);
+		for(FieldsAndMethods fam : r) {
+			System.out.println("---BEGIN--");
+			System.out.println(fam);
+			System.out.println("---END--");
+		}
+	}
+	
+	
 	public static void main(String[] args) {
-		Object o1 = new GenericBean<Long>((long) 123);
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new BrokenToString();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new ExceptionalBean();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new Fraction(1L,2L);
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new GenericBeanInt(321);
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new MyBeanCustomName();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new MyBeanCustomNameSubClass();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new MyEnumClass();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new MyNumber();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new MyNumberContainer();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new MyPublicClass();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new RecursiveBean("beaner");
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = Singleton.getInstance();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = SingletonEnum.getInstance();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new StringsResourceBundle();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
-		o1 = new WeirdList();
-		ReflectFieldsAndMethods.reflect(o1);
-		test(o1);
+		Object[] o1 = new Object[] {new GenericBean<Long>((long) 123),
+		new BrokenToString(),new ExceptionalBean(),new Fraction(1L,2L),new GenericBeanInt(321),new MyBeanCustomName(),
+		new MyBeanCustomNameSubClass(),new MyEnumClass(),new MyNumber(), new MyNumberContainer(),new MyPublicClass(),
+		new RecursiveBean("beaner"),Singleton.getInstance(),SingletonEnum.getInstance(),new StringsResourceBundle(),
+		new WeirdList()};
+		for(Object o : o1)
+			testReflect(o);
 	}
 
 }
