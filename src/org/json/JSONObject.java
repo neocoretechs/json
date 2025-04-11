@@ -16,7 +16,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+
+import org.json.reflect.FieldNamesAndConstructors;
+import org.json.reflect.ReflectFieldsAndMethods;
+import org.json.reflect.ReflectFieldsAndMethods.FieldsAndMethods;
 
 /**
  * A JSONObject is an unordered collection of name/value pairs. Its external
@@ -72,6 +77,9 @@ import java.util.regex.Pattern;
  * @version 2016-08-15
  */
 public class JSONObject {
+	public static boolean DEBUG = true;
+	public static boolean NOTIFY = true; // notify on field set fail, for debug
+	
     /**
      * JSONObject.NULL is equivalent to the value that JavaScript calls null,
      * whilst Java's null is equivalent to the value that JavaScript calls
@@ -2987,7 +2995,112 @@ public class JSONObject {
         }
         return results;
     }
-
+    /**
+     * Method to reflect and deliver JSON string
+     * @param bean target object
+     * @return JSON String
+     */
+    public static String toJson(Object bean) {
+		Set<FieldsAndMethods> r = ReflectFieldsAndMethods.reflect(bean);
+		int item = 1;
+		String res = null;
+		for(FieldsAndMethods fam: r) {
+			if(DEBUG)
+				System.out.println((item++)+".)"+fam);
+			if(fam.fields.className.equals(bean.getClass().getName())) {
+				res = fam.fields.reflect(bean).toString();
+				break;
+			}
+		}
+		return res;
+    }
+    /**
+     * Form the parsed map into a deserialized Object
+     * @return The Object indicated by the initial key element of the encapsulated Map
+     * @throws IllegalAccessException Cant access a member of the class to instantiate it, typically singleton with private ctor
+     * @throws InstantiationException If no default constructor or constructor is private
+     */
+    public Object toObject() throws InstantiationException, IllegalAccessException {
+    	Set<String> keys = this.keySet();
+    	if(keys.isEmpty()) {
+    		return null;
+    	}
+    	Class<?> targetClass = null;
+    	try {
+			targetClass = Class.forName((String) keys.toArray()[0]);
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
+    	Object targetObject = null;
+    	//try {
+			targetObject = targetClass.newInstance();
+		//} catch (InstantiationException | IllegalAccessException e) {
+		//	e.printStackTrace();
+		//	return null;
+		//}
+    	// try to get the reflected fields and methods from cache: performance opt.
+    	Set<FieldsAndMethods> reflectedClass = ReflectFieldsAndMethods.reflect(targetObject);
+    	// iterate all values in internal map generated from parsed JSON
+    	// set each field encountered
+        for (Entry<String, Object> entry : this.entrySet()) {
+            Object value = null;
+            //if (entry.getValue() == null || NULL.equals(entry.getValue())) {
+                //value = null;
+            //} else 
+            if (entry.getValue() instanceof JSONObject) {
+            	value = ((JSONObject) entry.getValue()).toMap();
+            } else {
+            	if (entry.getValue() instanceof JSONArray) {
+            		value = ((JSONArray) entry.getValue()).toList().toArray();
+            	} else {
+            		value = entry.getValue();
+            	}
+            }
+            if(value instanceof Map) {
+            	Set<?> entries = ((Map<?, ?>)value).entrySet();
+            	Iterator<?> it = entries.iterator();
+            	while(it.hasNext()) {
+            		Map.Entry<String, Object> so = (Entry<String, Object>) it.next();
+            		if(DEBUG)
+            			System.out.println(so.getKey()+" = "+so.getValue()+" | "+so.getValue().getClass());
+          			setField(reflectedClass, so.getKey(), so.getValue(), targetObject);
+            	}     	
+            } else {
+    			setField(reflectedClass, entry.getKey(), entry.getValue(), targetObject);
+            }
+        }
+        return targetObject;
+    }
+    /**
+     * Set the target field with the desired value for the given instance
+     * @param reflectedClass The pre-reflected set of fields and methods for the class under scrutiny
+     * @param fieldName the field name
+     * @param fieldValue the field value
+     * @param targetObject the instance to set
+     * @throws IllegalAccessException Cant access the given field to set the given value
+     * @throws IllegalArgumentException Cant set the field with the given value
+     */
+    private void setField(Set<FieldsAndMethods> reflectedClass, String fieldName, Object fieldValue, Object targetObject) {
+      	for(FieldsAndMethods fams: reflectedClass) {
+    		FieldNamesAndConstructors fnac = fams.fields;
+    		int fieldNum = fnac.fieldNames.indexOf(fieldName);
+    		if(fieldNum != -1) {
+    			// get the field, and its recursed superclass fields and constructors
+    			//Map<Field,FieldNamesAndConstructors> recFnac = fnac.recursedFields.get(fieldNum);
+    			fnac.getField(fieldNum).setAccessible(true);
+    			try {
+    				fnac.getField(fieldNum).set(targetObject, fieldValue);
+    				break;
+    			} catch (IllegalArgumentException | IllegalAccessException e) {
+    				if(NOTIFY) {
+    					System.out.println("Field set failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
+    					e.printStackTrace();
+    				}
+    			}
+    		}
+    	}
+    }
     /**
      * Create a new JSONException in a common format for incorrect conversions.
      * @param key name of the key

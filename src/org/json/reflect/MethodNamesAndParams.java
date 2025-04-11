@@ -57,7 +57,7 @@ public final class MethodNamesAndParams implements Serializable {
     	  	accessors.classClass = clazz;
         	accessors.className = accessors.classClass.getName();
         	ArrayList<Integer> accessorIndex = new ArrayList<Integer>();
-          	for(int i = m.length-1; i >= 0 ; i--) {
+          	for(int i = 0; i < m.length; i++) {
           		final int modifiers = m[i].getModifiers();
           		if(m[i].getName().startsWith("get") &&
           			!Modifier.isStatic(modifiers)
@@ -81,12 +81,12 @@ public final class MethodNamesAndParams implements Serializable {
           	accessors.returnTypes = new Class[accessorIndex.size()];
         	//
           	int methCnt = 0;
-        	for(int i = accessorIndex.size()-1; i >= 0 ; i--) {
+        	for(int i = 0; i < accessorIndex.size(); i++) {
         		Method mi = m[accessorIndex.get(i)];
         		accessors.methodParams[methCnt] = mi.getParameterTypes();
         		accessors.methodSigs[methCnt] = mi.toString();
         		accessors.returnTypes[methCnt] = Void.class;
-
+        		// even though accessor is zero params, no overload, we still need name to index fast lookup
         		ArrayList<Integer> mPos = accessors.methodLookup.get(mi.getName());
         		if(mPos == null) {
         			mPos = new ArrayList<Integer>();
@@ -108,7 +108,7 @@ public final class MethodNamesAndParams implements Serializable {
         	mutators.classClass = clazz;
         	mutators.className = mutators.classClass.getName();   
           	ArrayList<Integer> mutatorIndex = new ArrayList<Integer>();  
-          	for(int i = m.length-1; i >= 0 ; i--) {
+          	for(int i = 0; i < m.length; i++) {
           		final int modifiers = m[i].getModifiers();
           		if(m[i].getName().startsWith("set")
           				&& !Modifier.isStatic(modifiers)
@@ -132,14 +132,14 @@ public final class MethodNamesAndParams implements Serializable {
         	mutators.returnTypes = new Class[mutatorIndex.size()];
         	int methCnt = 0;
         	//
-        	for(int i = mutatorIndex.size()-1; i >= 0 ; i--) {
+        	for(int i = 0; i < mutatorIndex.size(); i++) {
         		Method mi = m[mutatorIndex.get(i)];
         		mutators.methodParams[methCnt] = mi.getParameterTypes();
         		mutators.methodSigs[methCnt] = mi.toString();
         		mutators.returnTypes[methCnt] = mi.getReturnType();
         		if( mutators.returnTypes[methCnt] == void.class ) 
         			mutators.returnTypes[methCnt] = Void.class;
-
+        		// mutators may be overloaded, may have multiple name to position entries
         		ArrayList<Integer> mPos = mutators.methodLookup.get(mi.getName());
         		if(mPos == null) {
         			mPos = new ArrayList<Integer>();

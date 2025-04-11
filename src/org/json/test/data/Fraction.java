@@ -14,26 +14,28 @@ public class Fraction extends Number implements Comparable<Fraction> {
      * serial id.
      */
     private static final long serialVersionUID = 1L;
+    
+    public Fraction() {
+
+	}
 
     /**
      * value as a big decimal.
      */
-    private final BigDecimal bigDecimal;
+    private BigDecimal bigDecimal;
 
     /**
      * value of the denominator.
      */
-    private final BigInteger denominator;
+    private BigInteger denominator;
     /**
      * value of the numerator.
      */
-    private final BigInteger numerator;
+    private BigInteger numerator;
 
     /**
-     * @param numerator
-     *            numerator
-     * @param denominator
-     *            denominator
+     * @param numerator numerator
+     * @param denominator denominator
      */
     public Fraction(final BigInteger numerator, final BigInteger denominator) {
         super();
@@ -67,10 +69,8 @@ public class Fraction extends Number implements Comparable<Fraction> {
     }
     
     /**
-     * @param numerator
-     *            numerator
-     * @param denominator
-     *            denominator
+     * @param numerator  numerator
+     * @param denominator denominator
      */
     public Fraction(final long numerator, final long denominator) {
         this(BigInteger.valueOf(numerator),BigInteger.valueOf(denominator));

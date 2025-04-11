@@ -1,10 +1,12 @@
 package org.json.test;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.reflect.FieldNamesAndConstructors;
 import org.json.reflect.ReflectFieldsAndMethods;
 import org.json.reflect.ReflectFieldsAndMethods.FieldsAndMethods;
 import org.json.test.data.BrokenToString;
@@ -29,6 +31,33 @@ public class BeanTest {
 	public BeanTest() {
 	}
 	
+	/**
+	 * Simulate round trip via wire
+	 * @param bean
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
+	 * @throws JSONException 
+	 * @throws InstantiationException 
+	 */
+	public static void testObject(Object bean) throws JSONException, IllegalArgumentException, IllegalAccessException, InstantiationException {
+		//this constructor wont add class name as JSON field
+		//JSONObject o1 = new JSONObject(bean);
+		//-------
+		//Set<FieldsAndMethods> r = ReflectFieldsAndMethods.reflect(bean);
+		//for(FieldsAndMethods fam : r) {
+			//String json = fam.fields.reflect(bean).toString();
+		String json = JSONObject.toJson(bean);
+			System.out.println("reflected JSON:"+json);
+			JSONObject o2 = new JSONObject(json);
+			System.out.println(o2.toObject());
+			System.out.println("================");
+		//}
+	}
+	
+	/**
+	 * Test map generation from object
+	 * @param bean
+	 */
 	public static void test(Object bean) {
 		JSONObject o1 = new JSONObject(bean);
 		System.out.println(o1);
@@ -47,9 +76,21 @@ public class BeanTest {
 		});
 		System.out.println("---END--");
 	}
-	
+	/**
+	 * Test reflection; reflect an object, iterate fields and methods
+	 * @param bean
+	 * @throws JSONException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
 	public static void testReflect(Object bean) throws JSONException, IllegalArgumentException, IllegalAccessException {
 		Set<FieldsAndMethods> r = ReflectFieldsAndMethods.reflect(bean);
+		Iterator i = r.iterator();
+		int c = 1;
+		System.out.println("--Begin fields and methods");
+		while(i.hasNext())
+			System.out.println("fields and methods "+(c++)+":"+i.next());
+		System.out.println("End fields and methods--");
 		for(FieldsAndMethods fam : r) {
 			System.out.println("---BEGIN--");
 			String json = fam.fields.reflect(bean).toString();
@@ -70,12 +111,17 @@ public class BeanTest {
 	
 	public static void main(String[] args) throws Exception {
 		Object[] o1 = new Object[] {new GenericBean<Long>((long) 123),
-		new BrokenToString(),new ExceptionalBean(),new Fraction(1L,2L),new GenericBeanInt(321),new MyBeanCustomName(),
+		new ExceptionalBean(),new Fraction(1L,2L),new GenericBeanInt(321),new MyBeanCustomName(),
 		new MyBeanCustomNameSubClass(),new MyEnumClass(),new MyNumber(), new MyNumberContainer(),new MyPublicClass(),
 		new RecursiveBean("beaner"),Singleton.getInstance(),SingletonEnum.getInstance(),new StringsResourceBundle(),
-		new WeirdList()};
+		new WeirdList(),new FieldNamesAndConstructors()};
 		for(Object o : o1)
-			testReflect(o);
+			//testReflect(o);
+			try {
+				testObject(o);
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
 	}
 
 }

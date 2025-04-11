@@ -11,7 +11,12 @@ import java.util.List;
  * @author John Aylward
  */
 public class WeirdList {
-    /** */
+	
+    public WeirdList() {
+		super();
+	}
+
+	/** */
     private final List<Integer> list = new ArrayList<>();
 
     /**

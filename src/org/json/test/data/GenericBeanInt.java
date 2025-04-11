@@ -8,7 +8,12 @@ package org.json.test.data;
  *
  */
 public class GenericBeanInt extends GenericBean<Integer> {
-    /** */
+	
+    public GenericBeanInt() {
+		super();
+	}
+
+	/** */
     final char a = 'A';
 
     /** @return the a */

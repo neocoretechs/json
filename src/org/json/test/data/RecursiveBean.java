@@ -7,7 +7,16 @@ package org.json.test.data;
  */
 public class RecursiveBean {
     private String name;
-    private Object reference;
+    public RecursiveBean() {
+		super();
+	}
+
+	@Override
+	public String toString() {
+		return "RecursiveBean [name=" + name + ", reference=" + reference + ", reference2=" + reference2 + "]";
+	}
+
+	private Object reference;
     private Object reference2;
     public String getName() { return name; }
     public Object getRef() {return reference;}

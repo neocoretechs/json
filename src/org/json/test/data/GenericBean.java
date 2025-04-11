@@ -10,6 +10,7 @@ import java.io.StringReader;
  *            generic number value
  */
 public class GenericBean<T extends Number> implements MyBean {
+	public GenericBean() {}
     /**
      * @param genericValue
      *            value to initiate with
@@ -19,7 +20,13 @@ public class GenericBean<T extends Number> implements MyBean {
         this.genericValue = genericValue;
     }
 
-    /** */
+    @Override
+	public String toString() {
+		return "GenericBean [genericValue=" + genericValue + ", genericGetCounter=" + genericGetCounter
+				+ ", genericSetCounter=" + genericSetCounter + "]";
+	}
+
+	/** */
     protected T genericValue;
     /** to be used by the calling test to see how often the getter is called */
     public int genericGetCounter;

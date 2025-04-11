@@ -3,13 +3,16 @@ package org.json.reflect;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
 * Utilizes helper classes {@link MethodNamesAndParams} {@link FieldNamesAndConstructors} and attempts to find 
@@ -18,21 +21,26 @@ import java.util.TreeMap;
 * @author Jonathan Groff Copyright (C) NeoCoreTechs 2025
 */
 public final class ReflectFieldsAndMethods  {
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	static HandlerClassLoader hcl = new HandlerClassLoader();
+	private static Map<Class<?>,Set<FieldsAndMethods>> classes = new ConcurrentHashMap<Class<?>,Set<FieldsAndMethods>>();
        
     public ReflectFieldsAndMethods() {}
     
     /**
-     * Main entry point for class hierarchy reflection
-     * @param clazz
-     * @return
+     * Main entry point for class hierarchy reflection, attempt cache retrieval first
+     * @param o object to reflect hierarchy
+     * @return The HashSet of reflected hierarchy
      */
     public static Set<FieldsAndMethods> reflect(Object o) {
     	Class<?> clazz = o.getClass();
-        Set<FieldsAndMethods> classes = new HashSet<>();
-        collectClasses(clazz, classes);
-        return classes;
+        Set<FieldsAndMethods> classesSet = classes.get(clazz);
+    	if(classesSet == null) {
+    		classesSet = new HashSet<FieldsAndMethods>();
+    		collectClasses(clazz, classesSet);
+    		classes.put(clazz, classesSet);
+    	}
+        return classesSet;
     }
     
     private static void collectClasses(Class<?> clazz, Set<FieldsAndMethods> classes) {
@@ -77,6 +85,7 @@ public final class ReflectFieldsAndMethods  {
     		return fields.toString();
     	}
     }
+    
     /**
      * Verify and invoke the proper
      * method.  We assume there is a table of class names and this and

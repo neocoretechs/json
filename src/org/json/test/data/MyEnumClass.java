@@ -4,7 +4,11 @@ package org.json.test.data;
  * this is simply a class that contains some enum instances
  */
 public class MyEnumClass {
-    private MyEnum myEnum;
+    @Override
+	public String toString() {
+		return "MyEnumClass [myEnum=" + myEnum + ", myEnumField=" + myEnumField + "]";
+	}
+	private MyEnum myEnum;
     private MyEnumField myEnumField;
 
     public MyEnum getMyEnum() {

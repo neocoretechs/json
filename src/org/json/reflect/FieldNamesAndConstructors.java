@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -23,6 +24,7 @@ import org.json.JSONObject;
 public class FieldNamesAndConstructors implements Serializable {
 	private static final long serialVersionUID = -738720973959363650L;
 	private static boolean DEBUG = false;
+	public static boolean NOTIFY = true; // notify on field set or reflect fail, for debug
 	public static boolean ignoreTransient = true; // process transient fields?
     public transient Class<?> classClass;
     public String className;
@@ -32,9 +34,13 @@ public class FieldNamesAndConstructors implements Serializable {
     public transient Constructor<?>[] constructors;
     public transient Class<?>[][] constructorParamTypes;
     public transient Constructor<?> defaultConstructor;
-    public transient TreeMap<Integer, Map<Field,FieldNamesAndConstructors>> recursedFields = new TreeMap<Integer, Map<Field,FieldNamesAndConstructors>>();
+    public transient Map<Field,FieldNamesAndConstructors> recursedFields;
     
 	public FieldNamesAndConstructors() {}
+	
+	public Field getField(int ifield) {
+		return fields[ifield];
+	}
 	
 	public static Map<Field,FieldNamesAndConstructors> getAllSuperclasses(Field field) {
 	        Map<Field,FieldNamesAndConstructors> classes = new LinkedHashMap<Field,FieldNamesAndConstructors>();
@@ -43,22 +49,25 @@ public class FieldNamesAndConstructors implements Serializable {
 	} 
 	
 	private static void collectClasses(Field field, Map<Field,FieldNamesAndConstructors> classes) {
-	        if (field != null) {
-	        	if(DEBUG)
-	        		System.out.println("FieldNamesAndConstructors Putting field "+field);
-	            classes.put(field, reflectorFieldNamesAndConstructorFactory(field.getType()));
-	            // Add superclass
-	            Class<?> superClass = field.getType().getSuperclass();
-	            if(superClass == null || superClass == java.lang.Object.class)
-	            	return;
-	            if(DEBUG)
-	            	System.out.println("FieldNAmesAndConstructors Recursing superclass "+superClass);
-	            Field[] fields = superClass.getDeclaredFields();
-	            for(Field nextField: fields) {
-	            	if(!nextField.getType().isPrimitive())
-	            		collectClasses(nextField, classes);
-	            }
-	        }
+		if (field != null) {
+			if(DEBUG) {
+				System.out.println("FieldNamesAndConstructors Putting field "+field);
+				if(classes.get(field) != null)
+					System.out.println("***pre-existing field:"+field);
+			}
+			classes.put(field, reflectorFieldNamesAndConstructorFactory(field.getType()));
+			// Add superclass
+			Class<?> superClass = field.getType().getSuperclass();
+			if(superClass == null || superClass == java.lang.Object.class)
+				return;
+			if(DEBUG)
+				System.out.println("FieldNAmesAndConstructors Recursing superclass "+superClass);
+			Field[] fields = superClass.getDeclaredFields();
+			for(Field nextField: fields) {
+				if(!nextField.getType().isPrimitive())
+					collectClasses(nextField, classes);
+			}
+		}
 	}
 	/**
 	 * Collect default constructor and other constructors NOT private, fields defined as not transient, not static
@@ -76,7 +85,7 @@ public class FieldNamesAndConstructors implements Serializable {
       	ArrayList<Integer> fieldIndex = new ArrayList<Integer>();
        	ArrayList<Integer> constructorIndex = new ArrayList<Integer>();
      	Constructor<?>[] ctors = clazz.getConstructors();
-       	for(int i = ctors.length-1; i >= 0 ; i--) {
+       	for(int i = 0; i < ctors.length ; i++) {
        		int cmods = ctors[i].getModifiers();
        		if(!Modifier.isPrivate(cmods)) {
        			if(ctors[i].getParameterCount() == 0)
@@ -89,14 +98,14 @@ public class FieldNamesAndConstructors implements Serializable {
        	fields.constructorParamTypes = new Class[constructorIndex.size()][];
      	int methCnt = 0;
     	//
-    	for(int i = constructorIndex.size()-1; i >= 0 ; i--) {
+    	for(int i = 0; i < constructorIndex.size(); i++) {
     		Constructor<?> ctor = ctors[constructorIndex.get(i)];
     		fields.constructors[methCnt] = ctor;
     		fields.constructorParamTypes[methCnt++] = ctor.getParameterTypes();
     	}
        	//
       	Field[] fieldz = clazz.getDeclaredFields();
-     	for(int i = fieldz.length-1; i >= 0 ; i--) {
+     	for(int i = 0; i < fieldz.length; i++) {
      		Field field = fieldz[i];
       		int fmods = field.getModifiers();
       		if((ignoreTransient && !Modifier.isTransient(fmods)) &&
@@ -106,7 +115,7 @@ public class FieldNamesAndConstructors implements Serializable {
       			!Modifier.isFinal(fmods) ) {
       			fieldIndex.add(i);
       			if(field.getType() != java.lang.Object.class && !field.getType().equals(clazz)) // prevent cyclic stack overflow
-      				fields.recursedFields.put(i, getAllSuperclasses(field));
+      				fields.recursedFields = getAllSuperclasses(field);
       		}		
       	}
      	//
@@ -116,7 +125,7 @@ public class FieldNamesAndConstructors implements Serializable {
      	fields.fieldTypes = new Class[fieldIndex.size()];
        	methCnt = 0;
     	//
-    	for(int i = fieldIndex.size()-1; i >= 0 ; i--) {
+    	for(int i = 0; i < fieldIndex.size(); i++) {
     		Field fi = fieldz[fieldIndex.get(i)];
     		fields.fields[methCnt] = fi;
     		fields.fieldTypes[methCnt++] = fi.getType();
@@ -124,23 +133,32 @@ public class FieldNamesAndConstructors implements Serializable {
     	}
     	return fields;
 	}
-	
-	public JSONObject reflect(Object bean) throws JSONException, IllegalArgumentException, IllegalAccessException {
+	/**
+	 * Works on established structures after build
+	 * @param bean target instance
+	 * @return JSONObject of reflected and processed bean
+	 * @throws JSONException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
+	public JSONObject reflect(Object bean) throws JSONException {
 		JSONObject o2 = new JSONObject();//(JSONObject) JSONObject.wrap(v);
 		for(int i = 0; i < fields.length; i++) {
 			fields[i].setAccessible(true);
-			Map<Field,FieldNamesAndConstructors> fnacMap = recursedFields.get(i);
-			if(fnacMap != null) {
-				FieldNamesAndConstructors fnac = fnacMap.get(fields[i]);
-				if(fnac != null) {
+			FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
+			try {
+				if(fnac != null)
 					o2.put(fieldNames.get(i),fnac.reflect(bean));
-				}
-			} else
-				try {
-				o2.put(fieldNames.get(i),fields[i].get(bean));
-				} catch(IllegalArgumentException iae) {
+			} catch(IllegalArgumentException iae) {
+				if(NOTIFY)
 					System.out.println(iae.getMessage()+" for field "+fieldNames.get(i));
-				}
+			}
+			try {
+				o2.put(fieldNames.get(i),fields[i].get(bean));
+			} catch(IllegalArgumentException | IllegalAccessException iae) {
+				if(NOTIFY)
+					System.out.println(iae.getMessage()+" for field "+fieldNames.get(i));
+			}
 		}
 		JSONObject o3 = new JSONObject();
 		o3.put(bean.getClass().getName(),o2);
@@ -149,33 +167,32 @@ public class FieldNamesAndConstructors implements Serializable {
 	
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder(className);
+		StringBuilder sb = new StringBuilder(className == null ? "NULL" : className);
 		sb.append("\r\n");
 		if(defaultConstructor != null) {
 			sb.append(defaultConstructor);
 			sb.append("\r\n");
 		}
-		for(int i = 0; i < constructors.length; i++) {
-			sb.append(constructors[i]);
-			sb.append(":");
-			sb.append(Arrays.toString(constructorParamTypes[i]));
-			sb.append("\r\n");
-		}
-		for(int i = 0; i < fields.length; i++) {
-			sb.append(fieldNames.get(i));
-			sb.append(":");
-			sb.append(fieldTypes[i]);
-			sb.append("\r\n");
-			Map<Field,FieldNamesAndConstructors> fnacMap = recursedFields.get(i);
-			if(fnacMap != null) {
-				FieldNamesAndConstructors fnac = fnacMap.get(fields[i]);
+		if(constructors != null)
+			for(int i = 0; i < constructors.length; i++) {
+				sb.append(constructors[i]);
+				sb.append(":");
+				sb.append(Arrays.toString(constructorParamTypes[i]));
+				sb.append("\r\n");
+			}
+		if(fields != null)
+			for(int i = 0; i < fields.length; i++) {
+				sb.append(fieldNames.get(i));
+				sb.append(":");
+				sb.append(fieldTypes[i]);
+				sb.append("\r\n");
+				FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
 				if(fnac != null) {
 					sb.append(fieldNames.get(i));
 					sb.append(".)");
 					sb.append(fnac.toString());
 				}
 			}
-		}
 		return sb.toString();
 	}
 
