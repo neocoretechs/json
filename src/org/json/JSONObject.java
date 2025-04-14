@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.json.reflect.FieldNamesAndConstructors;
@@ -72,12 +71,23 @@ import org.json.reflect.ReflectFieldsAndMethods.FieldsAndMethods;
  * if they are not the reserved words <code>true</code>, <code>false</code>,
  * or <code>null</code>.</li>
  * </ul>
- *
+ * Full reflection methods can be employed with the following:<p>
+ * <code>
+ * 	String json = JSONObject.toJson(bean); <br>
+ *	System.out.println(&quot;reflected JSON:&quot;+json); <br>
+ *	JSONObject o2 = new JSONObject(json); <br>
+ *	System.out.println(o2.toObject()); <br>
+ * or <br>
+ *  o2.toObject(Class targetClass); <br>
+ *	</code>
+ * <p>
  * @author JSON.org
  * @version 2016-08-15
+ * @author Jonathan Groff NeoCoreTechs
+ * @version 2025-04-01
  */
 public class JSONObject {
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	public static boolean NOTIFY = true; // notify on field set fail, for debug
 	
     /**
@@ -3015,7 +3025,7 @@ public class JSONObject {
 		return res;
     }
     /**
-     * Form the parsed map into a deserialized Object
+     * Form the parsed map into a deserialized Object where we have the initial key at element 0 the class name
      * @return The Object indicated by the initial key element of the encapsulated Map
      * @throws IllegalAccessException Cant access a member of the class to instantiate it, typically singleton with private ctor
      * @throws InstantiationException If no default constructor or constructor is private
@@ -3032,6 +3042,17 @@ public class JSONObject {
 			e.printStackTrace();
 			return null;
 		}
+    	return toObject(targetClass);
+    }
+    
+    /**
+     * Form the parsed map into a deserialized Object where we declare the target class. The conforms to the default JSON processing chain.
+     * @param targetClass The class to instantiate for parsed JSON payload reception.
+     * @return The Object instance of the targetClass, populated with the payload from encapsulated parsed map.
+     * @throws InstantiationException Cant access a member of the class to instantiate it, typically singleton with private ctor
+     * @throws IllegalAccessException If no default constructor or constructor is private
+     */
+    public Object toObject(Class<?> targetClass) throws InstantiationException, IllegalAccessException {
     	Object targetObject = null;
     	//try {
 			targetObject = targetClass.newInstance();
@@ -3090,7 +3111,11 @@ public class JSONObject {
     			//Map<Field,FieldNamesAndConstructors> recFnac = fnac.recursedFields.get(fieldNum);
     			fnac.getField(fieldNum).setAccessible(true);
     			try {
-    				fnac.getField(fieldNum).set(targetObject, fieldValue);
+    				if(fnac.fieldTypes[fieldNum].isArray()) {
+    					fnac.getField(fieldNum).set(targetObject, fnac.fieldTypes[fieldNum].cast(((ArrayList)fieldValue).toArray()));
+    				} else {
+    					fnac.getField(fieldNum).set(targetObject, fieldValue);
+    				}
     				break;
     			} catch (IllegalArgumentException | IllegalAccessException e) {
     				if(NOTIFY) {
