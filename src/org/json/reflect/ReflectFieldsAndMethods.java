@@ -15,7 +15,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
-* Utilizes helper classes {@link MethodNamesAndParams} {@link FieldNamesAndConstructors} and attempts to find 
+* Utilizes helper classes {@link MethodNameAndParams} {@link FieldNamesAndConstructors} and attempts to find 
 * the best match between passed params and reflected
 * method params and so takes polymorphic calls into account.
 * @author Jonathan Groff Copyright (C) NeoCoreTechs 2025
@@ -58,7 +58,7 @@ public final class ReflectFieldsAndMethods  {
     /**
      * Build arrays and lists of method names and parameters to facilitate method lookup and invocation.
      * Methods are looked up by name, then parameters are compared such that overloaded methods can be invoked properly.
-     * The {@link MethodNamesAndParams} class is used to build the arrays and lists. In this class, the methods array holds reflected
+     * The {@link MethodNameAndParams} class is used to build the arrays and lists. In this class, the methods array holds reflected
      * methods and a TreeMap of method name mapped to a list of indexes into the methods array allows us to look up candidate
      * overloaded methods.
      * @param tclass The class to reflect
@@ -66,9 +66,9 @@ public final class ReflectFieldsAndMethods  {
      */
     private static FieldsAndMethods init(Class<?> clazz) {
     	Method m[] = clazz.getMethods();
-      	MethodNamesAndParams accessors = MethodNamesAndParams.reflectorAccessorFactory(clazz, m);
-    	MethodNamesAndParams mutators = MethodNamesAndParams.reflectorMutatorFactory(clazz, m);
     	FieldNamesAndConstructors fields = FieldNamesAndConstructors.reflectorFieldNamesAndConstructorFactory(clazz);
+       	MethodNameAndParams accessors = MethodNameAndParams.reflectorAccessorFactory(fields);
+    	MethodNameAndParams mutators = MethodNameAndParams.reflectorMutatorFactory(fields);
     	//
     	FieldsAndMethods fam = new FieldsAndMethods();
     	fam.accessors = accessors;
@@ -78,8 +78,8 @@ public final class ReflectFieldsAndMethods  {
     }
     
     public static class FieldsAndMethods {
-    	public MethodNamesAndParams accessors;
-    	public MethodNamesAndParams mutators;
+    	public MethodNameAndParams accessors;
+    	public MethodNameAndParams mutators;
     	public FieldNamesAndConstructors fields;
     	public String toString() {
     		return fields.toString();
@@ -92,85 +92,32 @@ public final class ReflectFieldsAndMethods  {
      * it has been used to locate this object. 
      * @return Object of result of method invocation
      */
-    public static Object invokeMethod(MethodNamesAndParams tmc, String targetMethod, Object localObject, Object[] methodParams) throws Exception {             
+    public static Object invokeAccessorMethod(Field field, Object localObject, Object[] methodParams) throws Exception {             
     	if(DEBUG) {
-    		System.out.println("ReflectFieldsAndMethods Target method:"+targetMethod+" remote request:"+tmc+" localObject:"+localObject);
+    		System.out.println("invokeAccessorMethod field:"+field+" localObject:"+localObject+" "+Arrays.toString(methodParams));
     	}
-    	tmc.methodIndex = tmc.methodNames.indexOf(targetMethod);
-    	if(tmc.methodIndex == -1)
-    		throw new Exception("Method not found in provided Method Names and Parameter structure");
-    	ArrayList<Integer> methodIndexList = tmc.methodLookup.get(tmc.methodIndex);
-    	String whyNotFound = "No such method";
-		Class[] params = tmc.methodParams[tmc.methodIndex];
-		//
-		// We are going to reflect the method params and determine the best one to invoke
-		// based on the parameters being assignable from the method parameters
-		//
-    	if(methodIndexList != null ) {
-    		TreeMap<Integer,Integer> methodRank = new TreeMap<Integer,Integer>();
-    		boolean found = false;
-    		for(int methodIndexCtr = 0; methodIndexCtr < methodIndexList.size(); methodIndexCtr++) {
-    			tmc.methodIndex = methodIndexList.get(methodIndexCtr);
-    			if (DEBUG) {
-    				for(int iparm1 = 0; iparm1 < params.length ; iparm1++) {        
-    					System.out.println("ReflectFieldsAndMethods Target method:"+targetMethod+" Calling param: "+params[iparm1]);
-    				}
-    			}
-    			int sumParamRank = 0;
-    			if( params.length == tmc.methodParams[tmc.methodIndex].length ) {
-    				found = true; // we found a method with required number of params
-    				for(int paramIndex = 0 ; paramIndex < params.length; paramIndex++) {
-    					// exact match? If passed param is null, count as 0 rank, below assignable or exact
-    					if( params[paramIndex] != null ) {
-    						//
-    						// Establish our ranking of method params to parameters we passed for the call
-    						//
-    						if(tmc.methodParams[tmc.methodIndex][paramIndex] == params[paramIndex]) {
-    							sumParamRank+=2;
-    						} else {
-    							// can we cast it?	
-    							if(tmc.methodParams[tmc.methodIndex][paramIndex].isAssignableFrom(params[paramIndex])) {
-    								sumParamRank+=1;
-    							} else {
-    								// parameter doesnt match, reduce to ineligible
-    								sumParamRank = -1;
-    								break;
-    							}
-    						}
-    					}
-    				}
-    				methodRank.put(sumParamRank, tmc.methodIndex);
-    			}
-    		}
-    		//
-    		if(found) {
-    			tmc.methodIndex = methodRank.get(methodRank.lastKey());
-    			if(tmc.methodIndex < 0) {
-    				whyNotFound = "parameters do not match";
-    			} else {
-    				// invoke it for return
-    				if(DEBUG) {
-    					System.out.println("ReflectFieldsAndMethods Invoking method:"+tmc.methods[tmc.methodIndex]+" on object "+localObject+" with params "+Arrays.toString(methodParams));
-    				}
-    				//tmc.setReturnClass(methods[methodIndex].getReturnType().getName());
-    				Object or =tmc.methods[tmc.methodIndex].invoke(localObject, methodParams);
-    				if(or != null) {
-    					tmc.setReturnClass(or.getClass().getName());
-    					if(DEBUG)
-    						System.out.println("ReflectFieldsAndMethods return from invocation:"+or+" class:"+or.getClass().getName());
-    				} else {
-    					tmc.setReturnClass(tmc.methods[tmc.methodIndex].getReturnType().getName());
-    					if(DEBUG)
-    						System.out.println("ReflectFieldsAndMethods returned NULL from invocation, setting return class "+tmc.methods[tmc.methodIndex].getReturnType().getName());
-    				}
-    				return or;
-    			}
-    		} else {
-    			whyNotFound = "wrong number of parameters";
-    		}
-    	}
-    	throw new NoSuchMethodException("Method "+targetMethod+" not found in "+tmc.className+" "+whyNotFound);
+    	// invoke it for return
+    	MethodNameAndParams method = MethodNameAndParams.accessorMethods.get(field);
+    	if(method == null)
+    		throw new NoSuchMethodException("Accessor Method for "+field+" not found.");
+    	Object or = method.method.invoke(localObject, methodParams);
+    	return or;
     }
-
+    /**
+     * Verify and invoke the proper
+     * method.  We assume there is a table of class names and this and
+     * it has been used to locate this object. 
+     * @return Object of result of method invocation
+     */
+    public static void invokeMutatorMethod(Field field, Object localObject, Object[] methodParams) throws Exception {             
+    	if(DEBUG) {
+    		System.out.println("invokeMutatorMethod field:"+field+" localObject:"+localObject+" "+Arrays.toString(methodParams));
+    	}
+    	// invoke it for return
+    	MethodNameAndParams method = MethodNameAndParams.mutatorMethods.get(field);
+    	if(method == null)
+    		throw new NoSuchMethodException(" Method for "+field+" not found.");
+    	method.method.invoke(localObject, methodParams);
+    }
 }
 

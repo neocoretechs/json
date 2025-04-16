@@ -7,10 +7,10 @@ import java.lang.reflect.Modifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.Objects;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -133,6 +133,24 @@ public class FieldNamesAndConstructors implements Serializable {
     	}
     	return fields;
 	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(className, fieldNames);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof FieldNamesAndConstructors)) {
+			return false;
+		}
+		FieldNamesAndConstructors other = (FieldNamesAndConstructors) obj;
+		return Objects.equals(className, other.className) && Objects.equals(fieldNames, other.fieldNames);
+	}
+
 	/**
 	 * Works on established structures after build
 	 * @param bean target instance
@@ -144,20 +162,35 @@ public class FieldNamesAndConstructors implements Serializable {
 	public JSONObject reflect(Object bean) throws JSONException {
 		JSONObject o2 = new JSONObject();//(JSONObject) JSONObject.wrap(v);
 		for(int i = 0; i < fields.length; i++) {
-			fields[i].setAccessible(true);
+			try {
+				fields[i].setAccessible(true);
+			} catch(Exception ioe) {
+				if(NOTIFY)
+					System.out.println("Object "+bean+" exception:"+ioe.getMessage()+" setAccessable failed for field "+fields[i]);
+			}
 			FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
 			try {
 				if(fnac != null)
 					o2.put(fieldNames.get(i),fnac.reflect(bean));
 			} catch(IllegalArgumentException iae) {
 				if(NOTIFY)
-					System.out.println(iae.getMessage()+" for field "+fieldNames.get(i));
+					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" reflection failed for recursed field "+fields[i]);
 			}
 			try {
 				o2.put(fieldNames.get(i),fields[i].get(bean));
 			} catch(IllegalArgumentException | IllegalAccessException iae) {
-				if(NOTIFY)
-					System.out.println(iae.getMessage()+" for field "+fieldNames.get(i));
+				if(NOTIFY) {
+					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" get failed for field "+fields[i]);
+					iae.printStackTrace();
+				}
+				try {
+					o2.put(fieldNames.get(i), ReflectFieldsAndMethods.invokeAccessorMethod(fields[i], bean, new Object[]{}));
+				} catch (Exception e) {
+					if(NOTIFY) {
+						System.out.println("Object "+bean+" exception:"+e.getMessage()+" accessor failed for field "+fields[i]);
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 		JSONObject o3 = new JSONObject();

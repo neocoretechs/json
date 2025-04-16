@@ -87,7 +87,7 @@ import org.json.reflect.ReflectFieldsAndMethods.FieldsAndMethods;
  * @version 2025-04-01
  */
 public class JSONObject {
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 	public static boolean NOTIFY = true; // notify on field set fail, for debug
 	
     /**
@@ -3013,16 +3013,30 @@ public class JSONObject {
     public static String toJson(Object bean) {
 		Set<FieldsAndMethods> r = ReflectFieldsAndMethods.reflect(bean);
 		int item = 1;
-		String res = null;
+		/*
+		String res = null;	
 		for(FieldsAndMethods fam: r) {
 			if(DEBUG)
-				System.out.println((item++)+".)"+fam);
+				System.out.println("##FieldsAndMethods: "+(item++)+".)"+fam);
 			if(fam.fields.className.equals(bean.getClass().getName())) {
 				res = fam.fields.reflect(bean).toString();
 				break;
 			}
 		}
-		return res;
+		return res.toString();
+		*/
+		JSONObject jo = new JSONObject();
+		Object[] ofieldsAndMethods = r.toArray();
+		for(int i = ofieldsAndMethods.length-1; i >= 0; i--) {
+			JSONObject jo1 = ((FieldsAndMethods)ofieldsAndMethods[i]).fields.reflect(bean);
+			if(DEBUG)
+				System.out.println("##FieldsAndMethods: "+(item++)+".)"+((FieldsAndMethods)ofieldsAndMethods[i]));
+			Set<Entry<String,Object>> entries = jo1.entrySet();
+			for(Entry<String,Object> entry : entries) {
+				jo.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return jo.toString();
     }
     /**
      * Form the parsed map into a deserialized Object where we have the initial key at element 0 the class name
@@ -3120,7 +3134,15 @@ public class JSONObject {
     			} catch (IllegalArgumentException | IllegalAccessException e) {
     				if(NOTIFY) {
     					System.out.println("Field set failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
-    					e.printStackTrace();
+     					e.printStackTrace();
+    				}
+    				try {
+						ReflectFieldsAndMethods.invokeMutatorMethod(fnac.getField(fieldNum), targetObject, new Object[]{fieldValue});
+					} catch (Exception e1) {
+		  				if(NOTIFY) {
+	    					System.out.println("Mutator method invoke failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
+	    					e1.printStackTrace();
+		  				}
     				}
     			}
     		}
