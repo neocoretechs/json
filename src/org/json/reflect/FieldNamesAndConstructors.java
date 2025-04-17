@@ -38,6 +38,11 @@ public class FieldNamesAndConstructors implements Serializable {
     
 	public FieldNamesAndConstructors() {}
 	
+	public FieldNamesAndConstructors(Class<?> clazz) {
+		this.classClass = clazz;
+		this.className = clazz.getName();
+	}
+	
 	public Field getField(int ifield) {
 		return fields[ifield];
 	}
@@ -80,9 +85,7 @@ public class FieldNamesAndConstructors implements Serializable {
 	public static FieldNamesAndConstructors reflectorFieldNamesAndConstructorFactory(Class<?> clazz) {
 		if(DEBUG)
 			System.out.println("FieldNamesAndConstructors.reflectorFieldNamesAndConstructorFactory class:"+clazz);
-	  	FieldNamesAndConstructors fields = new FieldNamesAndConstructors();
-  	  	fields.classClass = clazz;
-    	fields.className = clazz.getName();
+	  	FieldNamesAndConstructors fields = new FieldNamesAndConstructors(clazz);
     	// process fields
       	ArrayList<Integer> fieldIndex = new ArrayList<Integer>();
        	ArrayList<Integer> constructorIndex = new ArrayList<Integer>();

@@ -114,7 +114,7 @@ public class BeanTest {
 		new ExceptionalBean(),new Fraction(1L,2L),new GenericBeanInt(321),new MyBeanCustomName(),
 		new MyBeanCustomNameSubClass(),new MyEnumClass(),new MyNumber(), new MyNumberContainer(),new MyPublicClass(),
 		new RecursiveBean("beaner"),Singleton.getInstance(),SingletonEnum.getInstance(),new StringsResourceBundle(),
-		new WeirdList(),new FieldNamesAndConstructors()};
+		new WeirdList(),new FieldNamesAndConstructors(FieldNamesAndConstructors.class)};
 		for(Object o : o1)
 			//testReflect(o);
 			try {
