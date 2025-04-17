@@ -64,7 +64,9 @@ public class FieldNamesAndConstructors implements Serializable {
 				System.out.println("FieldNAmesAndConstructors Recursing superclass "+superClass);
 			Field[] fields = superClass.getDeclaredFields();
 			for(Field nextField: fields) {
-				if(!nextField.getType().isPrimitive())
+				if(!nextField.getType().isPrimitive() && 
+					!nextField.getClass().getPackage().getName().startsWith("java.") &&
+					!nextField.getClass().getPackage().getName().startsWith("javax."))
 					collectClasses(nextField, classes);
 			}
 		}
@@ -159,7 +161,7 @@ public class FieldNamesAndConstructors implements Serializable {
 	 * @throws IllegalArgumentException
 	 * @throws IllegalAccessException
 	 */
-	public JSONObject reflect(Object bean) throws JSONException {
+	public JSONObject reflect(Object bean) throws JSONException {	
 		JSONObject o2 = new JSONObject();//(JSONObject) JSONObject.wrap(v);
 		for(int i = 0; i < fields.length; i++) {
 			try {
@@ -170,7 +172,9 @@ public class FieldNamesAndConstructors implements Serializable {
 			}
 			FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
 			try {
-				if(fnac != null)
+				if(fnac != null && 
+					!fnac.classClass.getPackage().getName().startsWith("java.") &&
+					!fnac.classClass.getPackage().getName().startsWith("javax."))
 					o2.put(fieldNames.get(i),fnac.reflect(bean));
 			} catch(IllegalArgumentException iae) {
 				if(NOTIFY)
