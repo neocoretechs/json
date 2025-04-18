@@ -43,6 +43,21 @@ public final class ReflectFieldsAndMethods  {
         return classesSet;
     }
     
+    /**
+     * Main entry point for class hierarchy reflection, attempt cache retrieval first
+     * @param c CLass to reflect hierarchy
+     * @return The HashSet of reflected hierarchy
+     */
+    public static Set<FieldsAndMethods> reflect(Class<?> clazz) {
+        Set<FieldsAndMethods> classesSet = classes.get(clazz);
+    	if(classesSet == null) {
+    		classesSet = new HashSet<FieldsAndMethods>();
+    		collectClasses(clazz, classesSet);
+    		classes.put(clazz, classesSet);
+    	}
+        return classesSet;
+    }
+    
     private static void collectClasses(Class<?> clazz, Set<FieldsAndMethods> classes) {
         if (clazz != null) {
         	if(DEBUG)

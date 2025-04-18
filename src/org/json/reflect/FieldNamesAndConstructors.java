@@ -174,11 +174,14 @@ public class FieldNamesAndConstructors implements Serializable {
 					System.out.println("Object "+bean+" exception:"+ioe.getMessage()+" setAccessable failed for field "+fields[i]);
 			}
 			FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
+			if(DEBUG)
+				System.out.println("***recursedFields got:"+fields[i]+" -- "+fnac);
 			try {
 				if(fnac != null && 
 					!fnac.classClass.getPackage().getName().startsWith("java.") &&
-					!fnac.classClass.getPackage().getName().startsWith("javax."))
-					o2.put(fieldNames.get(i),fnac.reflect(bean));
+					!fnac.classClass.getPackage().getName().startsWith("javax.")) {
+						o2.put(fieldNames.get(i),fnac.reflect(bean));
+				}
 			} catch(IllegalArgumentException iae) {
 				if(NOTIFY)
 					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" reflection failed for recursed field "+fields[i]);
@@ -201,6 +204,8 @@ public class FieldNamesAndConstructors implements Serializable {
 			}
 		}
 		JSONObject o3 = new JSONObject();
+		if(DEBUG)
+			System.out.println("RETURN from reflect, put:"+o3.has(bean.getClass().getName())+" key:"+bean.getClass().getName());
 		o3.put(bean.getClass().getName(),o2);
 		return o3;
 	}

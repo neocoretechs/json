@@ -8,6 +8,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -3033,7 +3034,11 @@ public class JSONObject {
 				System.out.println("##FieldsAndMethods: "+(item++)+".)"+((FieldsAndMethods)ofieldsAndMethods[i]));
 			Set<Entry<String,Object>> entries = jo1.entrySet();
 			for(Entry<String,Object> entry : entries) {
-				jo.put(entry.getKey(), entry.getValue());
+				if(DEBUG) {
+					System.out.println("JSONObject:"+entry.getKey()+", class:"+entry.getValue().getClass().getName()+" value:"+entry.getValue());
+				}
+				if(!jo.has(entry.getKey()))
+					jo.put(entry.getKey(), entry.getValue());
 			}
 		}
 		return jo.toString();
@@ -3126,7 +3131,12 @@ public class JSONObject {
     			fnac.getField(fieldNum).setAccessible(true);
     			try {
     				if(fnac.fieldTypes[fieldNum].isArray()) {
-    					fnac.getField(fieldNum).set(targetObject, fnac.fieldTypes[fieldNum].cast(((ArrayList)fieldValue).toArray()));
+    					Object[] fArray = ((ArrayList)fieldValue).toArray();
+    					Object aObject = Array.newInstance(fnac.fieldTypes[fieldNum].getComponentType(), fArray.length);
+    				    int length = Array.getLength(aObject);
+    				    for(int i = 0; i < length; i++)
+    				    	Array.set(aObject, i, fArray[i]);
+    					fnac.getField(fieldNum).set(targetObject, fnac.fieldTypes[fieldNum].cast(aObject));
     				} else {
     					fnac.getField(fieldNum).set(targetObject, fieldValue);
     				}
