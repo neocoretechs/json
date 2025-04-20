@@ -1,17 +1,11 @@
 package org.json.reflect;
 
-import java.lang.reflect.*;
-import java.util.ArrayList;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -23,24 +17,22 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ReflectFieldsAndMethods  {
 	private static final boolean DEBUG = false;
 	static HandlerClassLoader hcl = new HandlerClassLoader();
-	private static Map<Class<?>,Set<FieldsAndMethods>> classes = new ConcurrentHashMap<Class<?>,Set<FieldsAndMethods>>();
+	private static Map<Class<?>,FieldsAndMethods> classes = new ConcurrentHashMap<Class<?>,FieldsAndMethods>();
        
     public ReflectFieldsAndMethods() {}
+    
+    public static FieldsAndMethods getFieldsAndMethods(Class<?> clazz) {
+    	return classes.get(clazz);
+    }
     
     /**
      * Main entry point for class hierarchy reflection, attempt cache retrieval first
      * @param o object to reflect hierarchy
      * @return The HashSet of reflected hierarchy
      */
-    public static Set<FieldsAndMethods> reflect(Object o) {
+    public static FieldsAndMethods reflect(Object o) {
     	Class<?> clazz = o.getClass();
-        Set<FieldsAndMethods> classesSet = classes.get(clazz);
-    	if(classesSet == null) {
-    		classesSet = new HashSet<FieldsAndMethods>();
-    		collectClasses(clazz, classesSet);
-    		classes.put(clazz, classesSet);
-    	}
-        return classesSet;
+        return reflect(clazz);
     }
     
     /**
@@ -48,26 +40,16 @@ public final class ReflectFieldsAndMethods  {
      * @param c CLass to reflect hierarchy
      * @return The HashSet of reflected hierarchy
      */
-    public static Set<FieldsAndMethods> reflect(Class<?> clazz) {
-        Set<FieldsAndMethods> classesSet = classes.get(clazz);
+    public static FieldsAndMethods reflect(Class<?> clazz) {
+        FieldsAndMethods classesSet = classes.get(clazz);
     	if(classesSet == null) {
-    		classesSet = new HashSet<FieldsAndMethods>();
-    		collectClasses(clazz, classesSet);
+    		classesSet = init(clazz);
     		classes.put(clazz, classesSet);
-    	}
-        return classesSet;
-    }
-    
-    private static void collectClasses(Class<?> clazz, Set<FieldsAndMethods> classes) {
-        if (clazz != null) {
-        	if(DEBUG)
-        		System.out.println("ReflectFieldsAndMethods Adding class:"+clazz);
-            classes.add(init(clazz));
-            // Add superclass
             Class<?> superClass = clazz.getSuperclass();
             if(superClass != java.lang.Object.class)
-            	collectClasses(superClass, classes);
-        }
+            	reflect(superClass);
+    	}
+        return classesSet;
     }
     
     /**
@@ -81,7 +63,7 @@ public final class ReflectFieldsAndMethods  {
      */
     private static FieldsAndMethods init(Class<?> clazz) {
     	Method m[] = clazz.getMethods();
-    	FieldNamesAndConstructors fields = FieldNamesAndConstructors.reflectorFieldNamesAndConstructorFactory(clazz);
+    	FieldNamesAndConstructors fields = FieldNamesAndConstructors.reflectorFieldFactory(clazz);
        	MethodNameAndParams accessors = MethodNameAndParams.reflectorAccessorFactory(fields);
     	MethodNameAndParams mutators = MethodNameAndParams.reflectorMutatorFactory(fields);
     	//

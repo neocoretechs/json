@@ -3012,36 +3012,17 @@ public class JSONObject {
      * @return JSON String
      */
     public static String toJson(Object bean) {
-		Set<FieldsAndMethods> r = ReflectFieldsAndMethods.reflect(bean);
-		int item = 1;
-		/*
-		String res = null;	
-		for(FieldsAndMethods fam: r) {
-			if(DEBUG)
-				System.out.println("##FieldsAndMethods: "+(item++)+".)"+fam);
-			if(fam.fields.className.equals(bean.getClass().getName())) {
-				res = fam.fields.reflect(bean).toString();
-				break;
-			}
-		}
-		return res.toString();
-		*/
-		JSONObject jo = new JSONObject();
-		Object[] ofieldsAndMethods = r.toArray();
-		for(int i = ofieldsAndMethods.length-1; i >= 0; i--) {
-			JSONObject jo1 = ((FieldsAndMethods)ofieldsAndMethods[i]).fields.reflect(bean);
-			if(DEBUG)
-				System.out.println("##FieldsAndMethods: "+(item++)+".)"+((FieldsAndMethods)ofieldsAndMethods[i]));
-			Set<Entry<String,Object>> entries = jo1.entrySet();
-			for(Entry<String,Object> entry : entries) {
-				if(DEBUG) {
-					System.out.println("JSONObject:"+entry.getKey()+", class:"+entry.getValue().getClass().getName()+" value:"+entry.getValue());
-				}
-				if(!jo.has(entry.getKey()))
-					jo.put(entry.getKey(), entry.getValue());
-			}
-		}
-		return jo.toString();
+    	FieldsAndMethods r = ReflectFieldsAndMethods.reflect(bean);
+    	JSONObject jo = r.fields.reflect(bean);
+    	if(DEBUG)
+    		System.out.println("##FieldsAndMethods: "+r);
+    	Set<Entry<String,Object>> entries = jo.entrySet();
+    	for(Entry<String,Object> entry : entries) {
+    		if(DEBUG) {
+    			System.out.println("JSONObject:"+entry.getKey()+", class:"+entry.getValue().getClass().getName()+" value:"+entry.getValue());
+    		}
+    	}
+    	return jo.toString();
     }
     /**
      * Form the parsed map into a deserialized Object where we have the initial key at element 0 the class name
@@ -3080,7 +3061,7 @@ public class JSONObject {
 		//	return null;
 		//}
     	// try to get the reflected fields and methods from cache: performance opt.
-    	Set<FieldsAndMethods> reflectedClass = ReflectFieldsAndMethods.reflect(targetObject);
+    	FieldsAndMethods reflectedClass = ReflectFieldsAndMethods.reflect(targetObject);
     	// iterate all values in internal map generated from parsed JSON
     	// set each field encountered
         for (Entry<String, Object> entry : this.entrySet()) {
@@ -3121,38 +3102,36 @@ public class JSONObject {
      * @throws IllegalAccessException Cant access the given field to set the given value
      * @throws IllegalArgumentException Cant set the field with the given value
      */
-    private void setField(Set<FieldsAndMethods> reflectedClass, String fieldName, Object fieldValue, Object targetObject) {
-      	for(FieldsAndMethods fams: reflectedClass) {
-    		FieldNamesAndConstructors fnac = fams.fields;
-    		int fieldNum = fnac.fieldNames.indexOf(fieldName);
-    		if(fieldNum != -1) {
-    			// get the field, and its recursed superclass fields and constructors
-    			//Map<Field,FieldNamesAndConstructors> recFnac = fnac.recursedFields.get(fieldNum);
-    			fnac.getField(fieldNum).setAccessible(true);
+    private void setField(FieldsAndMethods reflectedClass, String fieldName, Object fieldValue, Object targetObject) {
+    	FieldNamesAndConstructors fnac = reflectedClass.fields;
+    	int fieldNum = fnac.fieldNames.indexOf(fieldName);
+    	if(fieldNum != -1) {
+    		// get the field, and its recursed superclass fields and constructors
+    		//Map<Field,FieldNamesAndConstructors> recFnac = fnac.recursedFields.get(fieldNum);
+    		fnac.getField(fieldNum).setAccessible(true);
+    		try {
+    			if(fnac.fieldTypes[fieldNum].isArray()) {
+    				Object[] fArray = ((ArrayList)fieldValue).toArray();
+    				Object aObject = Array.newInstance(fnac.fieldTypes[fieldNum].getComponentType(), fArray.length);
+    				int length = Array.getLength(aObject);
+    				for(int i = 0; i < length; i++)
+    					Array.set(aObject, i, fArray[i]);
+    				fnac.getField(fieldNum).set(targetObject, fnac.fieldTypes[fieldNum].cast(aObject));
+    			} else {
+    				fnac.getField(fieldNum).set(targetObject, fieldValue);
+    			}
+
+    		} catch (IllegalArgumentException | IllegalAccessException e) {
+    			if(NOTIFY) {
+    				System.out.println("Field set failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
+    				e.printStackTrace();
+    			}
     			try {
-    				if(fnac.fieldTypes[fieldNum].isArray()) {
-    					Object[] fArray = ((ArrayList)fieldValue).toArray();
-    					Object aObject = Array.newInstance(fnac.fieldTypes[fieldNum].getComponentType(), fArray.length);
-    				    int length = Array.getLength(aObject);
-    				    for(int i = 0; i < length; i++)
-    				    	Array.set(aObject, i, fArray[i]);
-    					fnac.getField(fieldNum).set(targetObject, fnac.fieldTypes[fieldNum].cast(aObject));
-    				} else {
-    					fnac.getField(fieldNum).set(targetObject, fieldValue);
-    				}
-    				break;
-    			} catch (IllegalArgumentException | IllegalAccessException e) {
+    				ReflectFieldsAndMethods.invokeMutatorMethod(fnac.getField(fieldNum), targetObject, new Object[]{fieldValue});
+    			} catch (Exception e1) {
     				if(NOTIFY) {
-    					System.out.println("Field set failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
-     					e.printStackTrace();
-    				}
-    				try {
-						ReflectFieldsAndMethods.invokeMutatorMethod(fnac.getField(fieldNum), targetObject, new Object[]{fieldValue});
-					} catch (Exception e1) {
-		  				if(NOTIFY) {
-	    					System.out.println("Mutator method invoke failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
-	    					e1.printStackTrace();
-		  				}
+    					System.out.println("Mutator method invoke failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
+    					e1.printStackTrace();
     				}
     			}
     		}

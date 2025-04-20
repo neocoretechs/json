@@ -19,11 +19,12 @@ import org.json.JSONObject;
 * A basic Serializable helper class used with arrays of field names and 
 * constructors for a target class. Ignores transient fields by default, changeable by boolean field.
 * Entry point is factory method, leaving various fields and array populated.
+* The declared fields, and all superclass fields will be included. The reference will be to the base class however.
 * @author Jonathan Groff Copyright (C) NeoCoreTechs, Inc. 2025
 */
 public class FieldNamesAndConstructors implements Serializable {
 	private static final long serialVersionUID = -738720973959363650L;
-	private static boolean DEBUG = false;
+	private static boolean DEBUG = true;
 	public static boolean NOTIFY = true; // notify on field set or reflect fail, for debug
 	public static boolean ignoreTransient = true; // process transient fields?
     public transient Class<?> classClass;
@@ -34,8 +35,8 @@ public class FieldNamesAndConstructors implements Serializable {
     public transient Constructor<?>[] constructors;
     public transient Class<?>[][] constructorParamTypes;
     public transient Constructor<?> defaultConstructor;
-    public transient Map<Field,FieldNamesAndConstructors> recursedFields;
-    
+    public static Map<Field,FieldNamesAndConstructors> recursedFields = new LinkedHashMap<Field,FieldNamesAndConstructors>();
+    public static Map<Class<?>,FieldNamesAndConstructors> allClasses = new LinkedHashMap<Class<?>,FieldNamesAndConstructors>();
 	public FieldNamesAndConstructors() {}
 	
 	public FieldNamesAndConstructors(Class<?> clazz) {
@@ -46,46 +47,20 @@ public class FieldNamesAndConstructors implements Serializable {
 	public Field getField(int ifield) {
 		return fields[ifield];
 	}
-	
-	public static Map<Field,FieldNamesAndConstructors> getAllSuperclasses(Field field) {
-	        Map<Field,FieldNamesAndConstructors> classes = new LinkedHashMap<Field,FieldNamesAndConstructors>();
-	        collectClasses(field, classes);
-	        return classes;
-	} 
-	
-	private static void collectClasses(Field field, Map<Field,FieldNamesAndConstructors> classes) {
-		if (field != null) {
-			if(DEBUG) {
-				System.out.println("FieldNamesAndConstructors Putting field "+field);
-				if(classes.get(field) != null)
-					System.out.println("***pre-existing field:"+field);
-			}
-			classes.put(field, reflectorFieldNamesAndConstructorFactory(field.getType()));
-			// Add superclass
-			Class<?> superClass = field.getType().getSuperclass();
-			if(superClass == null || superClass == java.lang.Object.class)
-				return;
-			if(DEBUG)
-				System.out.println("FieldNAmesAndConstructors Recursing superclass "+superClass);
-			Field[] fields = superClass.getDeclaredFields();
-			for(Field nextField: fields) {
-				if(!nextField.getType().isPrimitive() && 
-					!nextField.getClass().getPackage().getName().startsWith("java.") &&
-					!nextField.getClass().getPackage().getName().startsWith("javax."))
-					collectClasses(nextField, classes);
-			}
-		}
-	}
+
 	/**
 	 * Collect default constructor and other constructors NOT private, fields defined as not transient, not static
 	 * not volatile, native or final.
 	 * @param clazz target class
 	 * @return this populated
 	 */
-	public static FieldNamesAndConstructors reflectorFieldNamesAndConstructorFactory(Class<?> clazz) {
+	public static FieldNamesAndConstructors reflectorFieldFactory(Class<?> clazz) {
 		if(DEBUG)
-			System.out.println("FieldNamesAndConstructors.reflectorFieldNamesAndConstructorFactory class:"+clazz);
-	  	FieldNamesAndConstructors fields = new FieldNamesAndConstructors(clazz);
+			System.out.println("FieldNamesAndConstructors.reflectorFieldFactory class:"+clazz);
+	  	FieldNamesAndConstructors fields = allClasses.get(clazz);
+	  	if(fields != null)
+	  		return fields;
+	  	fields = new FieldNamesAndConstructors(clazz);
     	// process fields
       	ArrayList<Integer> fieldIndex = new ArrayList<Integer>();
        	ArrayList<Integer> constructorIndex = new ArrayList<Integer>();
@@ -109,20 +84,28 @@ public class FieldNamesAndConstructors implements Serializable {
     		fields.constructorParamTypes[methCnt++] = ctor.getParameterTypes();
     	}
        	//
-      	Field[] fieldz = clazz.getDeclaredFields();
-     	for(int i = 0; i < fieldz.length; i++) {
-     		Field field = fieldz[i];
-      		int fmods = field.getModifiers();
-      		if((ignoreTransient && !Modifier.isTransient(fmods)) &&
-      			!Modifier.isStatic(fmods) &&
-      			!Modifier.isVolatile(fmods) &&
-      			!Modifier.isNative(fmods) &&
-      			!Modifier.isFinal(fmods) ) {
-      			fieldIndex.add(i);
-      			if(field.getType() != java.lang.Object.class && !field.getType().equals(clazz)) // prevent cyclic stack overflow
-      				fields.recursedFields = getAllSuperclasses(field);
-      		}		
-      	}
+    	ArrayList<Field> allFields = new ArrayList<Field>();
+    	Class<?> rClass = clazz;
+    	for(;;) {
+    		if(rClass == null)
+    			break;
+    		Field[] fieldz = rClass.getDeclaredFields();
+    		for(int i = 0; i < fieldz.length; i++) {
+    			Field field = fieldz[i];
+    			allFields.add(field);
+    			int fmods = field.getModifiers();
+    			if((ignoreTransient && !Modifier.isTransient(fmods)) &&
+    					!Modifier.isStatic(fmods) &&
+    					!Modifier.isVolatile(fmods) &&
+    					!Modifier.isNative(fmods) &&
+    					!Modifier.isFinal(fmods) ) {
+    				fieldIndex.add(allFields.size()-1);
+    				//if(field.getType() != java.lang.Object.class && !field.getType().equals(clazz)) // prevent cyclic stack overflow
+    				//	fields.recursedFields = getAllSuperclasses(field);
+    			}
+    		}
+    		rClass = rClass.getSuperclass();
+    	}
      	//
      	fields.classClass = clazz;
      	fields.className = clazz.getName();
@@ -131,7 +114,8 @@ public class FieldNamesAndConstructors implements Serializable {
        	methCnt = 0;
     	//
     	for(int i = 0; i < fieldIndex.size(); i++) {
-    		Field fi = fieldz[fieldIndex.get(i)];
+    		Field fi = allFields.get(fieldIndex.get(i));
+    		recursedFields.put(fi,  fields);
     		fields.fields[methCnt] = fi;
     		fields.fieldTypes[methCnt++] = fi.getType();
     		fields.fieldNames.add(fi.getName());
@@ -153,7 +137,7 @@ public class FieldNamesAndConstructors implements Serializable {
 			return false;
 		}
 		FieldNamesAndConstructors other = (FieldNamesAndConstructors) obj;
-		return Objects.equals(className, other.className) && Objects.equals(fieldNames, other.fieldNames);
+		return className.equals(other.className);
 	}
 
 	/**
@@ -175,17 +159,23 @@ public class FieldNamesAndConstructors implements Serializable {
 			}
 			FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
 			if(DEBUG)
-				System.out.println("***recursedFields got:"+fields[i]+" -- "+fnac);
-			try {
-				if(fnac != null && 
-					!fnac.classClass.getPackage().getName().startsWith("java.") &&
-					!fnac.classClass.getPackage().getName().startsWith("javax.")) {
+				System.out.println("***recursedFields got:"+fields[i]+" -- "+fnac+" "+(fnac != null ? fnac.classClass: "FNAC NULL")+" package:"+((fnac != null && fnac.classClass.getPackage() != null) ? fnac.classClass.getPackage() : "package NULL!)"));
+			/*try {
+				if(fnac != null) {
+					if(fnac.classClass.getPackage() == null)
 						o2.put(fieldNames.get(i),fnac.reflect(bean));
+					else
+						if(!fnac.classClass.getPackage().getName().startsWith("java.") &&
+								!fnac.classClass.getPackage().getName().startsWith("javax.")) {
+							o2.put(fieldNames.get(i),fnac.reflect(bean));
+						}
+
 				}
 			} catch(IllegalArgumentException iae) {
 				if(NOTIFY)
 					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" reflection failed for recursed field "+fields[i]);
 			}
+			*/
 			try {
 				o2.put(fieldNames.get(i),fields[i].get(bean));
 			} catch(IllegalArgumentException | IllegalAccessException iae) {
@@ -213,30 +203,34 @@ public class FieldNamesAndConstructors implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(className == null ? "NULL" : className);
+		sb.append("|");
+		sb.append(classClass == null ? "NULL" : classClass);
 		sb.append("\r\n");
-		if(defaultConstructor != null) {
-			sb.append(defaultConstructor);
-			sb.append("\r\n");
-		}
-		if(constructors != null)
-			for(int i = 0; i < constructors.length; i++) {
-				sb.append(constructors[i]);
-				sb.append(":");
-				sb.append(Arrays.toString(constructorParamTypes[i]));
-				sb.append("\r\n");
-			}
+		//if(defaultConstructor != null) {
+		//	sb.append(defaultConstructor);
+		//	sb.append("\r\n");
+		//}
+		//if(constructors != null)
+		//	for(int i = 0; i < constructors.length; i++) {
+		//		sb.append(constructors[i]);
+		//		sb.append(":");
+		//		sb.append(Arrays.toString(constructorParamTypes[i]));
+		//		sb.append("\r\n");
+		//	}
 		if(fields != null)
 			for(int i = 0; i < fields.length; i++) {
 				sb.append(fieldNames.get(i));
 				sb.append(":");
 				sb.append(fieldTypes[i]);
 				sb.append("\r\n");
-				FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
-				if(fnac != null) {
-					sb.append(fieldNames.get(i));
-					sb.append(".)");
-					sb.append(fnac.toString());
-				}
+				//if(recursedFields!= null) {
+				//	FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
+				//	if(fnac != null) {
+				//		sb.append(fieldNames.get(i));
+				//		sb.append(".)");
+				//		sb.append(fnac.toString());
+				//	}
+				//}
 			}
 		return sb.toString();
 	}

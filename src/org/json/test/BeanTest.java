@@ -84,30 +84,26 @@ public class BeanTest {
 	 * @throws IllegalAccessException
 	 */
 	public static void testReflect(Object bean) throws JSONException, IllegalArgumentException, IllegalAccessException {
-		Set<FieldsAndMethods> r = ReflectFieldsAndMethods.reflect(bean);
-		Iterator i = r.iterator();
+		FieldsAndMethods r = ReflectFieldsAndMethods.reflect(bean);
 		int c = 1;
 		System.out.println("--Begin fields and methods");
-		while(i.hasNext())
-			System.out.println("fields and methods "+(c++)+":"+i.next());
+		System.out.println(r);
 		System.out.println("End fields and methods--");
-		for(FieldsAndMethods fam : r) {
-			System.out.println("---BEGIN--");
-			String json = fam.fields.reflect(bean).toString();
-			System.out.println("json string:"+json);
-			new JSONObject(json).toMap().forEach((k,v)->{
-				System.out.println("key:"+k+" val:"+v.getClass().getName()+" "+v);
-				if(v instanceof Map) {
-					JSONObject o4 = (JSONObject) JSONObject.wrap(v);
-					o4.toMap().forEach((k4,v4)->{
-						System.out.println("subkey:"+k4+" sub val:"+v4.getClass().getName()+" "+v4);
-					});
-				}
-			});
-			System.out.println("---END--");
-		}
+		System.out.println("---BEGIN--");
+		String json = r.fields.reflect(bean).toString();
+		System.out.println("json string:"+json);
+		new JSONObject(json).toMap().forEach((k,v)->{
+			System.out.println("key:"+k+" val:"+v.getClass().getName()+" "+v);
+			if(v instanceof Map) {
+				JSONObject o4 = (JSONObject) JSONObject.wrap(v);
+				o4.toMap().forEach((k4,v4)->{
+					System.out.println("subkey:"+k4+" sub val:"+v4.getClass().getName()+" "+v4);
+				});
+			}
+		});
+		System.out.println("---END--");
 	}
-	
+
 	
 	public static void main(String[] args) throws Exception {
 		Object[] o1 = new Object[] {new GenericBean<Long>((long) 123),
