@@ -84,7 +84,7 @@ public class BeanTest {
 	 * @throws IllegalAccessException
 	 */
 	public static void testReflect(Object bean) throws JSONException, IllegalArgumentException, IllegalAccessException {
-		FieldsAndMethods r = ReflectFieldsAndMethods.reflect(bean);
+		FieldsAndMethods r = ReflectFieldsAndMethods.getFieldsAndMethods(bean);
 		int c = 1;
 		System.out.println("--Begin fields and methods");
 		System.out.println(r);

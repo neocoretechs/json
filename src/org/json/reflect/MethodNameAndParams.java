@@ -64,9 +64,9 @@ public final class MethodNameAndParams implements Serializable {
 		accessors.classClass = fieldz.classClass;
 		accessors.className = fieldz.className;
 		Method[] m = accessors.classClass.getDeclaredMethods();
-		if(fieldz.recursedFields == null)
+		if(FieldNamesAndConstructors.recursedFields == null)
 			return null;
-		for(Field fields: fieldz.recursedFields.keySet()) {
+		for(Field fields: FieldNamesAndConstructors.recursedFields.keySet()) {
 			char firstChar = fields.getName().charAt(0);
 			String accName = "get"+String.valueOf(firstChar).toUpperCase()+fields.getName().substring(1);
 			for(int i = 0; i < m.length; i++) {
@@ -111,9 +111,9 @@ public final class MethodNameAndParams implements Serializable {
 		mutators.classClass = fieldz.classClass;
 		mutators.className = fieldz.className;   
 		Method[] m = mutators.classClass.getDeclaredMethods();
-		if(fieldz.recursedFields == null)
+		if(FieldNamesAndConstructors.recursedFields == null)
 			return null;
-		for(Field fields: fieldz.recursedFields.keySet()) {
+		for(Field fields: FieldNamesAndConstructors.recursedFields.keySet()) {
 			char firstChar = fields.getName().charAt(0);
 			String mutName = "set"+String.valueOf(firstChar).toUpperCase()+fields.getName().substring(1);
 			for(int i = 0; i < m.length; i++) {

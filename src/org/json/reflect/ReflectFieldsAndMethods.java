@@ -21,26 +21,34 @@ public final class ReflectFieldsAndMethods  {
        
     public ReflectFieldsAndMethods() {}
     
+    /**
+     * Main entry for class
+     * @param clazz target class
+     * @return FieldsAndMethods structure
+     */
     public static FieldsAndMethods getFieldsAndMethods(Class<?> clazz) {
-    	return classes.get(clazz);
+    	FieldsAndMethods fam = classes.get(clazz);
+    	if(fam == null)
+    		fam = reflect(clazz);
+    	return fam;
+    }
+    /**
+     * Main entry for object
+     * @param o target object, class extracted
+     * @return FieldsAndMethods structure
+     */
+    public static FieldsAndMethods getFieldsAndMethods(Object o) {
+    	Class<?> clazz = o.getClass();
+    	return getFieldsAndMethods(clazz);
     }
     
-    /**
-     * Main entry point for class hierarchy reflection, attempt cache retrieval first
-     * @param o object to reflect hierarchy
-     * @return The HashSet of reflected hierarchy
-     */
-    public static FieldsAndMethods reflect(Object o) {
-    	Class<?> clazz = o.getClass();
-        return reflect(clazz);
-    }
     
     /**
      * Main entry point for class hierarchy reflection, attempt cache retrieval first
      * @param c CLass to reflect hierarchy
      * @return The HashSet of reflected hierarchy
      */
-    public static FieldsAndMethods reflect(Class<?> clazz) {
+    private static FieldsAndMethods reflect(Class<?> clazz) {
         FieldsAndMethods classesSet = classes.get(clazz);
     	if(classesSet == null) {
     		classesSet = init(clazz);
@@ -62,8 +70,7 @@ public final class ReflectFieldsAndMethods  {
      * @throws ClassNotFoundException
      */
     private static FieldsAndMethods init(Class<?> clazz) {
-    	Method m[] = clazz.getMethods();
-    	FieldNamesAndConstructors fields = FieldNamesAndConstructors.reflectorFieldFactory(clazz);
+    	FieldNamesAndConstructors fields = FieldNamesAndConstructors.getFieldNamesAndConstructors(clazz);
        	MethodNameAndParams accessors = MethodNameAndParams.reflectorAccessorFactory(fields);
     	MethodNameAndParams mutators = MethodNameAndParams.reflectorMutatorFactory(fields);
     	//

@@ -44,6 +44,20 @@ public class FieldNamesAndConstructors implements Serializable {
 		this.className = clazz.getName();
 	}
 	
+	/**
+	 * Main entry point
+	 * @param clazz target class
+	 * @return retrieved or processed FieldNamesAndConstructors
+	 */
+	public static FieldNamesAndConstructors getFieldNamesAndConstructors(Class<?> clazz) {
+		FieldNamesAndConstructors fields = allClasses.get(clazz);
+		if(fields != null) 
+			return fields;
+		fields = new FieldNamesAndConstructors(clazz);
+		allClasses.put(clazz, reflectorFieldFactory(fields));
+		return fields;
+	}
+	
 	public Field getField(int ifield) {
 		return fields[ifield];
 	}
@@ -54,14 +68,11 @@ public class FieldNamesAndConstructors implements Serializable {
 	 * @param clazz target class
 	 * @return this populated
 	 */
-	public static FieldNamesAndConstructors reflectorFieldFactory(Class<?> clazz) {
+	private static FieldNamesAndConstructors reflectorFieldFactory(FieldNamesAndConstructors fields) {
 		if(DEBUG)
-			System.out.println("FieldNamesAndConstructors.reflectorFieldFactory class:"+clazz);
-	  	FieldNamesAndConstructors fields = allClasses.get(clazz);
-	  	if(fields != null)
-	  		return fields;
-	  	fields = new FieldNamesAndConstructors(clazz);
+			System.out.println("FieldNamesAndConstructors.reflectorFieldFactory class:"+fields.classClass);
     	// process fields
+		Class<?> clazz = fields.classClass;
       	ArrayList<Integer> fieldIndex = new ArrayList<Integer>();
        	ArrayList<Integer> constructorIndex = new ArrayList<Integer>();
      	Constructor<?>[] ctors = clazz.getConstructors();
@@ -157,25 +168,6 @@ public class FieldNamesAndConstructors implements Serializable {
 				if(NOTIFY)
 					System.out.println("Object "+bean+" exception:"+ioe.getMessage()+" setAccessable failed for field "+fields[i]);
 			}
-			FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
-			if(DEBUG)
-				System.out.println("***recursedFields got:"+fields[i]+" -- "+fnac+" "+(fnac != null ? fnac.classClass: "FNAC NULL")+" package:"+((fnac != null && fnac.classClass.getPackage() != null) ? fnac.classClass.getPackage() : "package NULL!)"));
-			/*try {
-				if(fnac != null) {
-					if(fnac.classClass.getPackage() == null)
-						o2.put(fieldNames.get(i),fnac.reflect(bean));
-					else
-						if(!fnac.classClass.getPackage().getName().startsWith("java.") &&
-								!fnac.classClass.getPackage().getName().startsWith("javax.")) {
-							o2.put(fieldNames.get(i),fnac.reflect(bean));
-						}
-
-				}
-			} catch(IllegalArgumentException iae) {
-				if(NOTIFY)
-					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" reflection failed for recursed field "+fields[i]);
-			}
-			*/
 			try {
 				o2.put(fieldNames.get(i),fields[i].get(bean));
 			} catch(IllegalArgumentException | IllegalAccessException iae) {
@@ -203,34 +195,26 @@ public class FieldNamesAndConstructors implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(className == null ? "NULL" : className);
-		sb.append("|");
+		sb.append(" as Class:");
 		sb.append(classClass == null ? "NULL" : classClass);
-		sb.append("\r\n");
-		//if(defaultConstructor != null) {
-		//	sb.append(defaultConstructor);
-		//	sb.append("\r\n");
-		//}
-		//if(constructors != null)
-		//	for(int i = 0; i < constructors.length; i++) {
-		//		sb.append(constructors[i]);
-		//		sb.append(":");
-		//		sb.append(Arrays.toString(constructorParamTypes[i]));
-		//		sb.append("\r\n");
-		//	}
+		sb.append("\r\nConstructors:\r\n");
+		if(defaultConstructor != null) {
+			sb.append(defaultConstructor);
+			sb.append("\r\n");
+		}
+		if(constructors != null)
+			for(int i = 0; i < constructors.length; i++) {
+				sb.append(constructors[i]);
+				sb.append(" Param Types:");
+				sb.append(Arrays.toString(constructorParamTypes[i]));
+				sb.append("\r\n");
+			}
 		if(fields != null)
 			for(int i = 0; i < fields.length; i++) {
 				sb.append(fieldNames.get(i));
-				sb.append(":");
+				sb.append(" FieldType:");
 				sb.append(fieldTypes[i]);
 				sb.append("\r\n");
-				//if(recursedFields!= null) {
-				//	FieldNamesAndConstructors fnac = recursedFields.get(fields[i]);
-				//	if(fnac != null) {
-				//		sb.append(fieldNames.get(i));
-				//		sb.append(".)");
-				//		sb.append(fnac.toString());
-				//	}
-				//}
 			}
 		return sb.toString();
 	}

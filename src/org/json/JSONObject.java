@@ -3012,16 +3012,8 @@ public class JSONObject {
      * @return JSON String
      */
     public static String toJson(Object bean) {
-    	FieldsAndMethods r = ReflectFieldsAndMethods.reflect(bean);
+    	FieldsAndMethods r = ReflectFieldsAndMethods.getFieldsAndMethods(bean);
     	JSONObject jo = r.fields.reflect(bean);
-    	if(DEBUG)
-    		System.out.println("##FieldsAndMethods: "+r);
-    	Set<Entry<String,Object>> entries = jo.entrySet();
-    	for(Entry<String,Object> entry : entries) {
-    		if(DEBUG) {
-    			System.out.println("JSONObject:"+entry.getKey()+", class:"+entry.getValue().getClass().getName()+" value:"+entry.getValue());
-    		}
-    	}
     	return jo.toString();
     }
     /**
@@ -3061,7 +3053,7 @@ public class JSONObject {
 		//	return null;
 		//}
     	// try to get the reflected fields and methods from cache: performance opt.
-    	FieldsAndMethods reflectedClass = ReflectFieldsAndMethods.reflect(targetObject);
+    	FieldsAndMethods reflectedClass = ReflectFieldsAndMethods.getFieldsAndMethods(targetClass);
     	// iterate all values in internal map generated from parsed JSON
     	// set each field encountered
         for (Entry<String, Object> entry : this.entrySet()) {
@@ -3106,9 +3098,10 @@ public class JSONObject {
     	FieldNamesAndConstructors fnac = reflectedClass.fields;
     	int fieldNum = fnac.fieldNames.indexOf(fieldName);
     	if(fieldNum != -1) {
+    		Field field = fnac.getField(fieldNum);
     		// get the field, and its recursed superclass fields and constructors
     		//Map<Field,FieldNamesAndConstructors> recFnac = fnac.recursedFields.get(fieldNum);
-    		fnac.getField(fieldNum).setAccessible(true);
+    		field.setAccessible(true);
     		try {
     			if(fnac.fieldTypes[fieldNum].isArray()) {
     				Object[] fArray = ((ArrayList)fieldValue).toArray();
@@ -3116,9 +3109,9 @@ public class JSONObject {
     				int length = Array.getLength(aObject);
     				for(int i = 0; i < length; i++)
     					Array.set(aObject, i, fArray[i]);
-    				fnac.getField(fieldNum).set(targetObject, fnac.fieldTypes[fieldNum].cast(aObject));
+    				field.set(targetObject, fnac.fieldTypes[fieldNum].cast(aObject));
     			} else {
-    				fnac.getField(fieldNum).set(targetObject, fieldValue);
+    				field.set(targetObject, fieldValue);
     			}
 
     		} catch (IllegalArgumentException | IllegalAccessException e) {
@@ -3127,7 +3120,7 @@ public class JSONObject {
     				e.printStackTrace();
     			}
     			try {
-    				ReflectFieldsAndMethods.invokeMutatorMethod(fnac.getField(fieldNum), targetObject, new Object[]{fieldValue});
+    				ReflectFieldsAndMethods.invokeMutatorMethod(field, targetObject, new Object[]{fieldValue});
     			} catch (Exception e1) {
     				if(NOTIFY) {
     					System.out.println("Mutator method invoke failed for "+fieldName+" for value "+fieldValue+" on target instance "+targetObject);
