@@ -53,9 +53,6 @@ public final class ReflectFieldsAndMethods  {
     	if(classesSet == null) {
     		classesSet = init(clazz);
     		classes.put(clazz, classesSet);
-            Class<?> superClass = clazz.getSuperclass();
-            if(superClass != java.lang.Object.class)
-            	reflect(superClass);
     	}
         return classesSet;
     }
@@ -70,7 +67,9 @@ public final class ReflectFieldsAndMethods  {
      * @throws ClassNotFoundException
      */
     private static FieldsAndMethods init(Class<?> clazz) {
+    	// recurses superclasses
     	FieldNamesAndConstructors fields = FieldNamesAndConstructors.getFieldNamesAndConstructors(clazz);
+    	// get the set of methods for fields and superclass fields
        	MethodNameAndParams accessors = MethodNameAndParams.reflectorAccessorFactory(fields);
     	MethodNameAndParams mutators = MethodNameAndParams.reflectorMutatorFactory(fields);
     	//

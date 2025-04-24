@@ -236,7 +236,8 @@ public class JSONObject {
      */
     public JSONObject(JSONTokener x, JSONParserConfiguration jsonParserConfiguration) throws JSONException {
         this();
-
+        if(DEBUG)
+        	System.out.println("Constructing JSON object from source string");
         if (this.jsonParserConfiguration == null) {
             this.jsonParserConfiguration = jsonParserConfiguration;
         }
@@ -475,6 +476,8 @@ public class JSONObject {
      */
     public JSONObject(String source) throws JSONException {
         this(source, new JSONParserConfiguration());
+        if(DEBUG)
+        	System.out.println("JSONObject constructed with Source String:"+source);
         // Strict mode does not allow trailing chars
         if (this.jsonParserConfiguration.isStrictMode() &&
                 this.jsonTokener.nextClean() != 0) {
@@ -1823,6 +1826,8 @@ public class JSONObject {
                 final String key = getKeyNameFromMethod(method);
                 if (key != null && !key.isEmpty()) {
                     try {
+                    	if(DEBUG)
+                    		System.out.printf("%s invoking accessor method %s for key:%s%n", this.getClass().getName(),method,key);
                         final Object result = method.invoke(bean);
                         if (result != null) {
                             // check cyclic dependency and throw error if needed
@@ -2783,6 +2788,8 @@ public class JSONObject {
     private static Object wrap(Object object, Set<Object> objectsRecord, int recursionDepth, JSONParserConfiguration jsonParserConfiguration) {
         try {
             if (NULL.equals(object)) {
+            	if(DEBUG)
+            		System.out.println("JSONObject.wrap returning object as "+NULL);
                 return NULL;
             }
             if (object instanceof JSONObject || object instanceof JSONArray
@@ -2793,18 +2800,26 @@ public class JSONObject {
                     || object instanceof Float || object instanceof Double
                     || object instanceof String || object instanceof BigInteger
                     || object instanceof BigDecimal || object instanceof Enum) {
+             	if(DEBUG)
+            		System.out.println("JSONObject.wrap returning object as instanceof "+object);
                 return object;
             }
 
             if (object instanceof Collection) {
                 Collection<?> coll = (Collection<?>) object;
+             	if(DEBUG)
+            		System.out.println("JSONObject.wrap returning object as JSONArray collection");
                 return new JSONArray(coll, recursionDepth, jsonParserConfiguration);
             }
             if (object.getClass().isArray()) {
+               	if(DEBUG)
+            		System.out.println("JSONObject.wrap returning object as JSONArray object");
                 return new JSONArray(object);
             }
             if (object instanceof Map) {
                 Map<?, ?> map = (Map<?, ?>) object;
+               	if(DEBUG)
+            		System.out.println("JSONObject.wrap returning object as recursed map");
                 return new JSONObject(map, recursionDepth, jsonParserConfiguration);
             }
             Package objectPackage = object.getClass().getPackage();
@@ -2813,16 +2828,24 @@ public class JSONObject {
             if (objectPackageName.startsWith("java.")
                     || objectPackageName.startsWith("javax.")
                     || object.getClass().getClassLoader() == null) {
+               	if(DEBUG)
+            		System.out.println("JSONObject.wrap returning object as string due to:"+objectPackageName+" or classLoader "+object.getClass().getClassLoader());
                 return object.toString();
             }
             if (objectsRecord != null) {
+               	if(DEBUG)
+            		System.out.println("JSONObject.wrap returning object as recursed JSONObject "+object+" and "+objectsRecord);
                 return new JSONObject(object, objectsRecord);
             }
+           	if(DEBUG)
+        		System.out.println("JSONObject.wrap returning object as recursed JSONObject "+object);
             return new JSONObject(object);
         }
         catch (JSONException exception) {
             throw exception;
         } catch (Exception exception) {
+           	if(DEBUG)
+        		System.out.println("JSONObject.wrap returning object as null due to exception "+exception);
             return null;
         }
     }

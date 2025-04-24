@@ -37,6 +37,7 @@ public class FieldNamesAndConstructors implements Serializable {
     public transient Constructor<?> defaultConstructor;
     public static Map<Field,FieldNamesAndConstructors> recursedFields = new LinkedHashMap<Field,FieldNamesAndConstructors>();
     public static Map<Class<?>,FieldNamesAndConstructors> allClasses = new LinkedHashMap<Class<?>,FieldNamesAndConstructors>();
+    
 	public FieldNamesAndConstructors() {}
 	
 	public FieldNamesAndConstructors(Class<?> clazz) {
@@ -165,20 +166,22 @@ public class FieldNamesAndConstructors implements Serializable {
 			try {
 				fields[i].setAccessible(true);
 			} catch(Exception ioe) {
-				if(NOTIFY)
+				if(DEBUG || NOTIFY)
 					System.out.println("Object "+bean+" exception:"+ioe.getMessage()+" setAccessable failed for field "+fields[i]);
 			}
 			try {
 				o2.put(fieldNames.get(i),fields[i].get(bean));
+				if(DEBUG)
+					System.out.println("Object put "+fieldNames.get(i)+" for field"+fields[i]);
 			} catch(IllegalArgumentException | IllegalAccessException iae) {
-				if(NOTIFY) {
+				if(DEBUG || NOTIFY) {
 					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" get failed for field "+fields[i]);
 					iae.printStackTrace();
 				}
 				try {
 					o2.put(fieldNames.get(i), ReflectFieldsAndMethods.invokeAccessorMethod(fields[i], bean, new Object[]{}));
 				} catch (Exception e) {
-					if(NOTIFY) {
+					if(DEBUG || NOTIFY) {
 						System.out.println("Object "+bean+" exception:"+e.getMessage()+" accessor failed for field "+fields[i]);
 						e.printStackTrace();
 					}
