@@ -3122,12 +3122,18 @@ public class JSONObject {
     	int fieldNum = fnac.fieldNames.indexOf(fieldName);
     	if(fieldNum != -1) {
     		Field field = fnac.getField(fieldNum);
+       		if(DEBUG)
+    			System.out.printf("%s using field %s to set target %s of class %s to %s of class %s%n",this.getClass().getName(),field,targetObject,targetObject.getClass(),fieldValue,fieldValue.getClass());
     		// get the field, and its recursed superclass fields and constructors
     		//Map<Field,FieldNamesAndConstructors> recFnac = fnac.recursedFields.get(fieldNum);
     		field.setAccessible(true);
     		try {
     			if(fnac.fieldTypes[fieldNum].isArray()) {
-    				Object[] fArray = ((ArrayList)fieldValue).toArray();
+    				Object[] fArray;
+    				if(fieldValue.getClass() == JSONArray.class)
+    					fArray = (Object[]) ((JSONArray)fieldValue).toList().toArray();
+    				else
+    					fArray = ((ArrayList)fieldValue).toArray();
     				Object aObject = Array.newInstance(fnac.fieldTypes[fieldNum].getComponentType(), fArray.length);
     				int length = Array.getLength(aObject);
     				for(int i = 0; i < length; i++)

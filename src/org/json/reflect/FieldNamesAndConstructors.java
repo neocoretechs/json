@@ -170,9 +170,17 @@ public class FieldNamesAndConstructors implements Serializable {
 					System.out.println("Object "+bean+" exception:"+ioe.getMessage()+" setAccessable failed for field "+fields[i]);
 			}
 			try {
-				o2.put(fieldNames.get(i),fields[i].get(bean));
+				Object ob = fields[i].get(bean);
+				 //Package objectPackage = ob.getClass().getPackage();
+		            //String objectPackageName = objectPackage != null ? objectPackage.getName() : "";
+				if(ob != null && !ob.getClass().isPrimitive()) {//&& 
+				    //!(objectPackageName.startsWith("java.") || objectPackageName.startsWith("javax.") || ob.getClass().getClassLoader() == null) ) {
+					FieldNamesAndConstructors fnac = getFieldNamesAndConstructors(ob.getClass());
+					fnac.reflect(ob);
+				}
+				o2.put(fieldNames.get(i),ob);
 				if(DEBUG)
-					System.out.println("Object put "+fieldNames.get(i)+" for field"+fields[i]);
+					System.out.println("Object put "+fieldNames.get(i)+" for field "+fields[i]+" json"+o2);
 			} catch(IllegalArgumentException | IllegalAccessException iae) {
 				if(DEBUG || NOTIFY) {
 					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" get failed for field "+fields[i]);
