@@ -88,8 +88,8 @@ import org.json.reflect.ReflectFieldsAndMethods.FieldsAndMethods;
  * @version 2025-04-01
  */
 public class JSONObject {
-	public static boolean DEBUG = true;
-	public static boolean NOTIFY = true; // notify on field set fail, for debug
+	public static boolean DEBUG = false;
+	public static boolean NOTIFY = false; // notify on field set fail, for debug
 	
     /**
      * JSONObject.NULL is equivalent to the value that JavaScript calls null,

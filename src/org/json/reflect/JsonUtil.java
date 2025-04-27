@@ -16,7 +16,7 @@ import org.json.reflect.ReflectFieldsAndMethods.FieldsAndMethods;
 public class JsonUtil {
 
 	private static boolean NOTIFY = true;
-	private static boolean DEBUG = true;
+	private static boolean DEBUG = false;
 
 	public JsonUtil() {}
 	
