@@ -16,15 +16,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
-* A basic Serializable helper class used with arrays of field names and 
+* A meta class representing arrays of field names and 
 * constructors for a target class. Ignores transient fields by default, changeable by boolean field.
-* Entry point is factory method, leaving various fields and array populated.
+* Entry point is factory method, leaving various fields and arrays populated.
 * The declared fields, and all superclass fields will be included. The reference will be to the base class however.
 * @author Jonathan Groff Copyright (C) NeoCoreTechs, Inc. 2025
 */
 public class FieldNamesAndConstructors implements Serializable {
 	private static final long serialVersionUID = -738720973959363650L;
-	private static boolean DEBUG = false;
+	private static boolean DEBUG = true;
 	public static boolean NOTIFY = false; // notify on field set or reflect fail, for debug
 	public static boolean ignoreTransient = true; // process transient fields?
     public transient Class<?> classClass;
@@ -106,14 +106,23 @@ public class FieldNamesAndConstructors implements Serializable {
     			Field field = fieldz[i];
     			allFields.add(field);
     			int fmods = field.getModifiers();
-    			if((ignoreTransient && !Modifier.isTransient(fmods)) &&
+    			if(ignoreTransient) {
+    				if(!Modifier.isTransient(fmods) &&
     					!Modifier.isStatic(fmods) &&
     					!Modifier.isVolatile(fmods) &&
     					!Modifier.isNative(fmods) &&
     					!Modifier.isFinal(fmods) ) {
-    				fieldIndex.add(allFields.size()-1);
+    						fieldIndex.add(allFields.size()-1);
     				//if(field.getType() != java.lang.Object.class && !field.getType().equals(clazz)) // prevent cyclic stack overflow
     				//	fields.recursedFields = getAllSuperclasses(field);
+    				}
+    			} else {
+   					if(!Modifier.isStatic(fmods) &&
+   						!Modifier.isVolatile(fmods) &&
+   						!Modifier.isNative(fmods) &&
+   						!Modifier.isFinal(fmods) ) {
+   							fieldIndex.add(allFields.size()-1);
+   					}
     			}
     		}
     		rClass = rClass.getSuperclass();
@@ -154,52 +163,59 @@ public class FieldNamesAndConstructors implements Serializable {
 
 	/**
 	 * Works on established structures after build
-	 * @param bean target instance
-	 * @return JSONObject of reflected and processed bean
-	 * @throws JSONException
-	 * @throws IllegalArgumentException
-	 * @throws IllegalAccessException
+	 * @param object target instance
+	 * @param jobj the pre-existing JSONObject
+	 * @throws JSONException if we generate an error using JSON put methods
 	 */
-	public JSONObject reflect(Object bean) throws JSONException {	
-		JSONObject o2 = new JSONObject();//(JSONObject) JSONObject.wrap(v);
+	public void reflect(Object object, JSONObject o2) throws JSONException {	
 		for(int i = 0; i < fields.length; i++) {
 			try {
 				fields[i].setAccessible(true);
 			} catch(Exception ioe) {
 				if(DEBUG || NOTIFY)
-					System.out.println("Object "+bean+" exception:"+ioe.getMessage()+" setAccessable failed for field "+fields[i]);
+					System.out.println("Object "+object+" exception:"+ioe.getMessage()+" setAccessable failed for field "+fields[i]);
 			}
 			try {
-				Object ob = fields[i].get(bean);
+				Object ob = fields[i].get(object);
 				 //Package objectPackage = ob.getClass().getPackage();
 		            //String objectPackageName = objectPackage != null ? objectPackage.getName() : "";
-				if(ob != null && !ob.getClass().isPrimitive()) {//&& 
+				if(ob != null && !ob.getClass().isPrimitive() && !(ob instanceof JSONObject)) {//&& 
 				    //!(objectPackageName.startsWith("java.") || objectPackageName.startsWith("javax.") || ob.getClass().getClassLoader() == null) ) {
 					FieldNamesAndConstructors fnac = getFieldNamesAndConstructors(ob.getClass());
-					fnac.reflect(ob);
+					fnac.reflect(ob, o2);
 				}
 				o2.put(fieldNames.get(i),ob);
 				if(DEBUG)
 					System.out.println("Object put "+fieldNames.get(i)+" for field "+fields[i]+" json"+o2);
 			} catch(IllegalArgumentException | IllegalAccessException iae) {
 				if(DEBUG || NOTIFY) {
-					System.out.println("Object "+bean+" exception:"+iae.getMessage()+" get failed for field "+fields[i]);
+					System.out.println("Object "+object+" exception:"+iae.getMessage()+" get failed for field "+fields[i]);
 					iae.printStackTrace();
 				}
 				try {
-					o2.put(fieldNames.get(i), ReflectFieldsAndMethods.invokeAccessorMethod(fields[i], bean, new Object[]{}));
+					o2.put(fieldNames.get(i), ReflectFieldsAndMethods.invokeAccessorMethod(fields[i], object, new Object[]{}));
 				} catch (Exception e) {
 					if(DEBUG || NOTIFY) {
-						System.out.println("Object "+bean+" exception:"+e.getMessage()+" accessor failed for field "+fields[i]);
+						System.out.println("Object "+object+" exception:"+e.getMessage()+" accessor failed for field "+fields[i]);
 						e.printStackTrace();
 					}
 				}
 			}
 		}
+	}
+	/**
+	 * Create a new JSONObject, perform reflect, then add class name of target bean as to level key to hashmap of reflected values
+	 * @param object The target object
+	 * @return The fully formed JSONObject
+	 * @throws JSONException if parsing or reflection fails catastrophically
+	 */
+	public JSONObject reflect(Object object) throws JSONException {	
+		JSONObject o2 = new JSONObject();
+		reflect(object, o2);
 		JSONObject o3 = new JSONObject();
 		if(DEBUG)
-			System.out.println("RETURN from reflect, put:"+o3.has(bean.getClass().getName())+" key:"+bean.getClass().getName());
-		o3.put(bean.getClass().getName(),o2);
+			System.out.println("RETURN from reflect, put:"+o3.has(object.getClass().getName())+" key:"+object.getClass().getName());
+		o3.put(object.getClass().getName(),o2);
 		return o3;
 	}
 	

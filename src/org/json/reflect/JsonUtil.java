@@ -39,7 +39,8 @@ public class JsonUtil {
 						String fieldName = (String) me.getKey();
 						int fnum = fam.fields.fieldNames.indexOf(fieldName);
 						if(fnum == -1)
-							throw new RuntimeException("Can't find field:"+fieldName);
+							//throw new RuntimeException("Can't find field:"+fieldName);
+							continue;
 						Field field = fam.fields.getField(fnum);
 						if(DEBUG)
 							System.out.println("JsonUtil.generateParams HashMap Field:"+field);

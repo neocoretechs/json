@@ -1,17 +1,18 @@
 package org.json.reflect;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
-* Utilizes helper classes {@link MethodNameAndParams} {@link FieldNamesAndConstructors} and attempts to find 
-* the best match between passed params and reflected
-* method params and so takes polymorphic calls into account.
+* Composes helper classes {@link MethodNameAndParams} {@link FieldNamesAndConstructors} into FieldsAndMethods,
+* which contains accessor methods, mutator methods, and all fields for base and superclass. A cached
+* concurrent hashmap of FieldsAndMethods indexed by class is used to retrieve the proper FieldsAndMethods for a class.
+* When we call getFieldsAndMethods, if a cached instance cant be found, a reflection of the target class is performed and cached.
+* Once reflection is completed, we can then invoke the reflect methods of FieldNamesAndConstructors to access the runtime
+* values of the fields and methods of the target class. A JSONObject internal map is typically populated as a result of these actions,
+* allowing us to go from there to and from JSON representations.
 * @author Jonathan Groff Copyright (C) NeoCoreTechs 2025
 */
 public final class ReflectFieldsAndMethods  {
@@ -41,8 +42,7 @@ public final class ReflectFieldsAndMethods  {
     	Class<?> clazz = o.getClass();
     	return getFieldsAndMethods(clazz);
     }
-    
-    
+     
     /**
      * Main entry point for class hierarchy reflection, attempt cache retrieval first
      * @param c CLass to reflect hierarchy

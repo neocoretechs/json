@@ -368,7 +368,65 @@ public class JSONObject {
     }
 
     /**
-     * Construct a JSONObject from an Object using bean getters. It reflects on
+     * Use reflection to access the fields and methods of the target object to populate the internal map.
+     * If we cannot access an internal field for some reason, an accessor, or getter, method will be employed.
+   	 * The {@link JSONPropertyName} annotation can be used on a bean getter to
+     * override key name used in the JSONObject. For example, using the object
+     * above with the <code>getName</code> method, if we annotated it with:
+     * <pre>
+     * &#64;JSONPropertyName("FullName")
+     * public String getName() { return this.name; }
+     * </pre>
+     * The resulting JSON object would contain <code>"FullName": "Larry Fine"</code>
+     * <p>
+     * Similarly, the {@link JSONPropertyName} annotation can be used on non-
+     * <code>get</code> and <code>is</code> methods. We can also override key
+     * name used in the JSONObject as seen below even though the field would normally
+     * be ignored:
+     * <pre>
+     * &#64;JSONPropertyName("FullName")
+     * public String fullName() { return this.name; }
+     * </pre>
+     * The resulting JSON object would contain <code>"FullName": "Larry Fine"</code>
+     * <p>
+     * The {@link JSONPropertyIgnore} annotation can be used to force the bean property
+     * to not be serialized into JSON. If both {@link JSONPropertyIgnore} and
+     * {@link JSONPropertyName} are defined on the same method, a depth comparison is
+     * performed and the one closest to the concrete class being serialized is used.
+     * If both annotations are at the same level, then the {@link JSONPropertyIgnore}
+     * annotation takes precedent and the field is not serialized.
+     * For example, the following declaration would prevent the <code>getName</code>
+     * method from being serialized:
+     * <pre>
+     * &#64;JSONPropertyName("FullName")
+     * &#64;JSONPropertyIgnore
+     * public String getName() { return this.name; }
+     * </pre>
+     * @param object the target object to reflect and populat einternal map
+     */
+    public JSONObject(Object object) {
+        this();
+        this.populateMap(object);
+    }
+    /**
+     * Override default true setting of ignoreTransient. Will process transient fields if set true. 
+     * Field is reset to original value on exit.
+     * @param object Target object for reflection
+     * @param ignoreTransient true to ignore transient, false to process transient fields;
+     */
+    public JSONObject(Object object, boolean ignoreTransient) {
+        this();
+        boolean tIgnoreTransient = FieldNamesAndConstructors.ignoreTransient;
+        FieldNamesAndConstructors.ignoreTransient = ignoreTransient;
+        this.populateMap(object);
+        FieldNamesAndConstructors.ignoreTransient = tIgnoreTransient;
+    }
+    /**
+     * Special purpose constructor that uses strictly bean accessors to populate internal map, then assembles objects
+     * that were not valid numbers, as in NaN or infinite and places them in the objectsRecord param set. Part of original
+     * constructor series superseded by reflection based methods. The bean cannot be recursive.
+     * The objectsRecord has the form: Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>())
+     *   * Construct a JSONObject from an Object using bean getters. It reflects on
      * all of the public methods of the object. For each of the methods with no
      * parameters and a name starting with <code>"get"</code> or
      * <code>"is"</code> followed by an uppercase letter, the method is invoked,
@@ -423,15 +481,11 @@ public class JSONObject {
      * @param bean
      *            An object that has getter methods that should be used to make
      *            a JSONObject.
+     * @param objectsRecord the resultant set of invalid numbers
      * @throws JSONException
      *            If a getter returned a non-finite number.
      */
-    public JSONObject(Object bean) {
-        this();
-        this.populateMap(bean);
-    }
-
-    private JSONObject(Object bean, Set<Object> objectsRecord) {
+    public JSONObject(Object bean, Set<Object> objectsRecord) {
         this();
         this.populateMap(bean, objectsRecord);
     }
@@ -1791,22 +1845,26 @@ public class JSONObject {
         Object object = this.opt(key);
         return NULL.equals(object) ? defaultValue : object.toString();
     }
-
+    
     /**
-     * Populates the internal map of the JSONObject with the bean properties. The
-     * bean can not be recursive.
-     *
-     * @see JSONObject#JSONObject(Object)
-     *
-     * @param bean
-     *            the bean
-     * @throws JSONException
-     *            If a getter returned a non-finite number.
+     * Called by constructor taking single Object as arg. Uses put methods to populate internal map,
+     * thus invoking proper wrapping constructs for arrays, etc.
+     * @param object The target object for reflection based access
      */
-    private void populateMap(Object bean) {
-        populateMap(bean, Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>()));
+    private void populateMap(Object object) {
+    	if(!(object instanceof JSONObject)) {
+    		FieldsAndMethods fnac = ReflectFieldsAndMethods.getFieldsAndMethods(object);
+    		fnac.fields.reflect(object, this);
+    	}
     }
-
+    
+    /**
+     * Special purpose method that uses strictly bean accessors to populate internal map, then assembles objects
+     * that were not valid numbers, as in NaN or infinite and places them in the objectsRecord param set. Part of original
+     * populateMap series superseded by reflection based methods. 
+     * @param bean The target instance
+     * @param objectsRecord the resultant set of invalid numbers
+     */
     private void populateMap(Object bean, Set<Object> objectsRecord) {
         Class<?> klass = bean.getClass();
 
