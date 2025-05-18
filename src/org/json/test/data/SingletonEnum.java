@@ -1,12 +1,14 @@
 package org.json.test.data;
 
+import java.io.Serializable;
+
 /**
  * Sample singleton done as an Enum for use with bean testing.
  * 
  * @author John Aylward
  *
  */
-public enum SingletonEnum {
+public enum SingletonEnum implements Serializable{
     /**
      * the singleton instance.
      */

@@ -3,6 +3,8 @@
  */
 package org.json.test.data;
 
+import java.io.Serializable;
+
 import org.json.JSONPropertyIgnore;
 import org.json.JSONPropertyName;
 
@@ -10,8 +12,11 @@ import org.json.JSONPropertyName;
  * Test bean to verify that the {@link org.json.JSONPropertyName} annotation
  * is inherited.
  */
-public class MyBeanCustomNameSubClass extends MyBeanCustomName {
-    @Override
+public class MyBeanCustomNameSubClass extends MyBeanCustomName implements Serializable {
+    public MyBeanCustomNameSubClass() {
+		super();
+	}
+	@Override
     @JSONPropertyName("forcedInt")
     public int getIgnoredInt() { return 42*42; }
     @Override

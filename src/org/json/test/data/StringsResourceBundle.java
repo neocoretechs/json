@@ -1,12 +1,16 @@
 package org.json.test.data;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * A resource bundle class
  */
-public class StringsResourceBundle extends ListResourceBundle {
-    @Override
+public class StringsResourceBundle extends ListResourceBundle implements Serializable{
+    public StringsResourceBundle() {
+		super();
+	}
+	@Override
     public Object[][] getContents() {
         return contents;
     }

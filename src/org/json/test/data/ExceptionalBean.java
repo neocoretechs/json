@@ -5,6 +5,7 @@ package org.json.test.data;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -12,8 +13,13 @@ import java.lang.reflect.InvocationTargetException;
  * 
  * @author John Aylward
  */
-public class ExceptionalBean {
-    /**
+public class ExceptionalBean implements Serializable {
+	
+    public ExceptionalBean() {
+		super();
+	}
+
+	/**
      * @return a closeable.
      */
     public Closeable getCloseable() {

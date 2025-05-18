@@ -1,7 +1,12 @@
 package org.json.test.data;
 
-public class MyLocaleBean {
-    private final String id = "beanId";
+import java.io.Serializable;
+
+public class MyLocaleBean implements Serializable{
+    public MyLocaleBean() {
+		super();
+	}
+	private final String id = "beanId";
     private final String i = "beanI";
     public String getId() {
         return this.id;

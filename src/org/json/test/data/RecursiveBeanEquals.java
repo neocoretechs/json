@@ -1,7 +1,13 @@
 package org.json.test.data;
 
+import java.io.Serializable;
+
 /** test class for verifying if recursively defined bean can be correctly identified */
-public class RecursiveBeanEquals {
+public class RecursiveBeanEquals implements Serializable{
+  public RecursiveBeanEquals() {
+		this.name = "";
+	}
+
   private final String name;
   private Object reference;
 

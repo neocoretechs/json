@@ -68,10 +68,14 @@ public class BagTest {
 		bagtest.bag.add("22");
 		bagtest.bag.add("222");
 			try {
-				testObject(bagtest);
+				testObject(bagtest);	
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
+			com.neocoretechs.relatrix.Result1 r = new com.neocoretechs.relatrix.Result1("yo");
+			r.packForTransport();
+			System.out.println("r="+r);
+			System.out.println( new JSONObject(r));
 	}
 
 }

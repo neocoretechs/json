@@ -3,11 +3,13 @@
  */
 package org.json.test.data;
 
+import java.io.Serializable;
+
 /**
  * @author john
  *
  */
-public class GenericBeanInt extends GenericBean<Integer> {
+public class GenericBeanInt extends GenericBean<Integer>  implements Serializable{
 	
     public GenericBeanInt() {
 		super();

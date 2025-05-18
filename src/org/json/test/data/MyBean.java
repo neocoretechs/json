@@ -5,7 +5,7 @@ import java.io.*;
 /**
  * Used in testing when Bean behavior is needed
  */
-public interface MyBean {
+public interface MyBean extends Serializable {
     public Integer getIntKey();
     public Double getDoubleKey();
     public String getStringKey();

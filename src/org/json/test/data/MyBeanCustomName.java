@@ -1,12 +1,17 @@
 package org.json.test.data;
 
+import java.io.Serializable;
+
 import org.json.JSONPropertyName;
 
 /**
  * Test bean for the {@link JSONPropertyName} annotation.
  */
-public class MyBeanCustomName implements MyBeanCustomNameInterface {
-    public int getSomeInt() { return 42; }
+public class MyBeanCustomName implements MyBeanCustomNameInterface, Serializable {
+    public MyBeanCustomName() {
+		super();
+	}
+	public int getSomeInt() { return 42; }
     @JSONPropertyName("")
     public long getSomeLong() { return 42L; }
     @JSONPropertyName("myStringField")

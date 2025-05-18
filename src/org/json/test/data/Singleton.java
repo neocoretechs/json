@@ -1,12 +1,14 @@
 package org.json.test.data;
 
+import java.io.Serializable;
+
 /**
  * Sample singleton for use with bean testing.
  * 
  * @author John Aylward
  *
  */
-public final class Singleton {
+public final class Singleton implements Serializable{
     /** */
     private int someInt;
     /** */

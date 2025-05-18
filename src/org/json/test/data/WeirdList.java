@@ -3,6 +3,7 @@
  */
 package org.json.test.data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 /**
  * @author John Aylward
  */
-public class WeirdList {
+public class WeirdList implements Serializable{
 	
     public WeirdList() {
 		super();

@@ -1,11 +1,16 @@
 package org.json.test.data;
 
+import java.io.Serializable;
+
 /**
  * Class that holds our MyNumber override as a property.
  * @author John Aylward
  */
-public class MyNumberContainer {
-    private MyNumber myNumber = new MyNumber();
+public class MyNumberContainer implements Serializable{
+    public MyNumberContainer() {
+		super();
+	}
+	private MyNumber myNumber = new MyNumber();
     /**
      * @return a MyNumber.
      */

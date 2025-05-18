@@ -1,10 +1,15 @@
 package org.json.test.data;
 
+import java.io.Serializable;
+
 /**
  * this is simply a class that contains some enum instances
  */
-public class MyEnumClass {
-    @Override
+public class MyEnumClass implements Serializable{
+    public MyEnumClass() {
+		super();
+	}
+	@Override
 	public String toString() {
 		return "MyEnumClass [myEnum=" + myEnum + ", myEnumField=" + myEnumField + "]";
 	}

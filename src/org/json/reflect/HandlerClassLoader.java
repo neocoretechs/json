@@ -359,7 +359,7 @@ public class HandlerClassLoader extends ClassLoader {
      * @throws IOException 
     */
     public byte[] getBytesFromRepository(String name) throws BytecodeNotFoundInRepositoryException, IOException, URISyntaxException {		
-        byte[] retBytes = Files.readAllBytes(Paths.get(parent.getResource(name).toURI()));
+        byte[] retBytes = Files.readAllBytes(Paths.get(name));//Paths.get(parent.getResource(name).toURI()));
        	ClassNameAndBytes cnab = new ClassNameAndBytes(name, retBytes);
    	 	if(DEBUG)
 	 		System.out.println("DEBUG: HandlerClassLoader.getBytesFromRepository Attempting get for "+name);

@@ -1,5 +1,6 @@
 package org.json.test.data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
@@ -15,8 +16,12 @@ import java.math.BigDecimal;
  * 
  * @author John Aylward
  */
-public class MyNumber extends Number {
-    private Number number = BigDecimal.valueOf(42);
+public class MyNumber extends Number implements Serializable {
+    public MyNumber() {
+		super();
+	}
+
+	private Number number = BigDecimal.valueOf(42);
     /**
      */
     private static final long serialVersionUID = 1L;

@@ -1,5 +1,6 @@
 package org.json.test.data;
 
+import java.io.Serializable;
 import java.io.StringReader;
 
 /**
@@ -9,7 +10,7 @@ import java.io.StringReader;
  * @param <T>
  *            generic number value
  */
-public class GenericBean<T extends Number> implements MyBean {
+public class GenericBean<T extends Number> implements MyBean, Serializable {
 	public GenericBean() {}
     /**
      * @param genericValue

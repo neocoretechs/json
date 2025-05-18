@@ -1,5 +1,6 @@
 package org.json.test.data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -9,7 +10,7 @@ import java.math.RoundingMode;
  * @author John Aylward
  *
  */
-public class Fraction extends Number implements Comparable<Fraction> {
+public class Fraction extends Number implements Comparable<Fraction>,Serializable {
     /**
      * serial id.
      */
