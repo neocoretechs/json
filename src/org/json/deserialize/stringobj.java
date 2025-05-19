@@ -2,12 +2,14 @@ package org.json.deserialize;
 import java.io.*;
 import java.util.*;
 
+import org.json.JSONObject;
+
 /**
  * Represents a serialized string object.  This is primarily used in serialized streams;
  * however, it is also used internally by other objects, since string objects have
  * handles as well.
  */
-public class stringobj extends contentbase {
+public class stringobj extends contentbase implements JsonOutInterface {
     public String value;
     private int readorthrow(ByteArrayInputStream bais) throws EOFException {
         int x = bais.read();
@@ -68,4 +70,8 @@ public class stringobj extends contentbase {
         }
         this.value = sb.toString();
     }
+	@Override
+	public void toJson(JSONObject json) {
+		json.append("String", value);
+	}
 }

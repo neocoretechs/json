@@ -2,6 +2,9 @@ package org.json.deserialize;
 import java.io.*;
 import java.util.*;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * <p>Typed collection used for storing the values of a serialized array.  </p>
  *
@@ -9,7 +12,7 @@ import java.util.*;
  * stored as an Integer.  To determine whether or not this is an array of ints or of
  * Integer instances, check the name in the arrayobj's class description.</p>
  */
-public class arraycoll extends ArrayList<Object> {
+public class arraycoll extends ArrayList<Object> implements JsonArrayOutInterface {
     public static final long serialVersionUID = 2277356908919248L;
 
     private fieldtype ftype;
@@ -46,4 +49,11 @@ public class arraycoll extends ArrayList<Object> {
         }
         return sb.toString();
     }
+
+	@Override
+	public void toJson(JSONObject json) {
+		JSONArray ja = new JSONArray();
+		ja.put(this);
+		json.put(ftype.getJavaType(), ja);
+	}
 }

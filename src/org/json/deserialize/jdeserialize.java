@@ -6,6 +6,9 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.regex.*;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.reflect.BytecodeNotFoundInRepositoryException;
 import org.json.reflect.HandlerClassLoader;
 
@@ -878,6 +881,38 @@ public class jdeserialize {
             handlemaps.add(hm);
         }
     }
+    /**
+     * Create a JSON construct for serialized instance
+     * @param jo
+     * @throws IOException 
+     * @throws JSONException 
+     */
+    public void toJson(JSONObject jo) throws JSONException, IOException {
+        for(content c: handles.values()) {
+        	contentToJson(c, jo);
+        }
+    }
+    
+    public void contentToJson(content c, JSONObject jo) throws JSONException, IOException {
+        if(c instanceof classdesc) {
+            //classdesc cl = (classdesc)c;
+            // Member classes will be displayed as part of their enclosing
+            // classes.
+            //if(cl.isStaticMemberClass() || cl.isInnerClass()) {
+                return;
+            //}
+        } else {
+            if(c instanceof JsonOutInterface)
+                ((JsonOutInterface)c).toJson(jo);
+            else
+            	if(c instanceof JsonArrayOutInterface)
+            		((JsonArrayOutInterface)c).toJson(jo);
+            	else
+            		System.out.println("Unknown contentToJson:"+c+" class:"+c.getClass().getName());
+        }
+    }
+ 
+
     public void dump(Getopt go) throws IOException {
         if(go.hasOption("-blockdata") || go.hasOption("-blockdatamanifest")) {
             List<String> bout = go.getArguments("-blockdata");
@@ -1181,6 +1216,7 @@ public class jdeserialize {
         for(String filename: fargs) {
             //FileInputStream fis = null;
             try {
+                JSONObject jo0 = new JSONObject();
                 //fis = new FileInputStream(filename);
                 jdeserialize jd = new jdeserialize(filename);
                 if(go.hasOption("-debug")) {
@@ -1193,6 +1229,8 @@ public class jdeserialize {
                 Class<?> c = hcl.defineAClass("org.json.test.data."+filename.substring(filename.lastIndexOf("/")+1,filename.length()-6), clazz);
                 Object o = c.getConstructor(new Class<?>[0]).newInstance(new Object[] {});
                 byte[] b = null;
+                JSONObject jo1 = new JSONObject();
+                jo0.append(c.getName(), jo1);
                 try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
                 	ObjectOutputStream oos = new ObjectOutputStream(bos)) {
                 	oos.writeObject(o);
@@ -1202,6 +1240,8 @@ public class jdeserialize {
 				ByteArrayInputStream fis = new ByteArrayInputStream(b);
                 jd.run(fis, !go.hasOption("-noconnect"));
                 jd.dump(go);
+                jd.toJson(jo0);
+                System.out.println(jo0);
             } catch(EOFException eoe) {
                 debugerr("EOF error while attempting to decode file " + filename + ": " + eoe.getMessage());
                 eoe.printStackTrace();

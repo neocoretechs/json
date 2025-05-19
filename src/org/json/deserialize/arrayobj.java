@@ -2,6 +2,9 @@ package org.json.deserialize;
 import java.io.*;
 import java.util.*;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * <p>Represents an array instance, including the values the comprise the array.  </p>
  *
@@ -9,7 +12,7 @@ import java.util.*;
  * field type code representing the primitive type.  See jdeserialize.resolveJavaType()
  * for an example of analysis/generation of human-readable names from these class names.</p>
  */
-public class arrayobj extends contentbase {
+public class arrayobj extends contentbase implements JsonArrayOutInterface {
     /**
      * Type of the array instance.
      */
@@ -30,5 +33,11 @@ public class arrayobj extends contentbase {
         return "[array " + jdeserialize.hex(handle) + " classdesc " + classdesc.toString() + ": " 
             + data.toString() + "]";
     }
+	@Override
+	public void toJson(JSONObject json) {
+		JSONArray ja = new JSONArray();
+		ja.put(data);
+		json.put(data.getFieldType().getJavaType(), ja);
+	}
 }
 
