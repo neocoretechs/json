@@ -109,4 +109,13 @@ public class field {
             }
         }
     }
+    
+    @Override
+    public String toString() {
+    	try {
+			return String.format("%s %s %s inner:%b", classname,name,getJavaType(),isInnerClassReference);
+		} catch (IOException e) {
+			return String.format("%s %s %s inner:%b", classname,name,e.getMessage(),isInnerClassReference);
+		}
+    }
 }

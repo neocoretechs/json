@@ -51,9 +51,10 @@ public class arraycoll extends ArrayList<Object> implements JsonArrayOutInterfac
     }
 
 	@Override
-	public void toJson(JSONObject json) {
+	public void toJson(JSONObject json, field fromField) {
 		JSONArray ja = new JSONArray();
 		ja.put(this);
-		json.put(ftype.getJavaType(), ja);
+		json.put(fromField.name,ja);
+		json.put("type",fromField.type.getJavaType());
 	}
 }

@@ -100,5 +100,10 @@ public enum fieldtype {
                 throw new ValidityException("invalid field type char: " + b);
         }
     }
+    
+    @Override
+    public String toString() {
+    	return javatype;
+    }
 }
 

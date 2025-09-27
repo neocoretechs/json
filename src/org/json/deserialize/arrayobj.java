@@ -34,10 +34,11 @@ public class arrayobj extends contentbase implements JsonArrayOutInterface {
             + data.toString() + "]";
     }
 	@Override
-	public void toJson(JSONObject json) {
+	public void toJson(JSONObject json, field fromField) {
 		JSONArray ja = new JSONArray();
 		ja.put(data);
-		json.put(data.getFieldType().getJavaType(), ja);
+		json.put(fromField.name,ja);
+		json.put("type",fromField.type.getJavaType());
 	}
 }
 

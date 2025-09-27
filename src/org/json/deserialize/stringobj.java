@@ -71,7 +71,8 @@ public class stringobj extends contentbase implements JsonOutInterface {
         this.value = sb.toString();
     }
 	@Override
-	public void toJson(JSONObject json) {
-		json.append("String", value);
+	public void toJson(JSONObject json, field fromField) {
+		json.append(fromField.name,value);
+		json.append("type","String");
 	}
 }

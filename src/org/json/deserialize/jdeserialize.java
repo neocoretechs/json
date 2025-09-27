@@ -888,28 +888,29 @@ public class jdeserialize {
      * @throws JSONException 
      */
     public void toJson(JSONObject jo) throws JSONException, IOException {
+    	JSONObject jo0 = jo;
         for(content c: handles.values()) {
-        	contentToJson(c, jo);
+        	jo0 = contentToJson(c, jo0);
         }
     }
     
-    public void contentToJson(content c, JSONObject jo) throws JSONException, IOException {
+    public JSONObject contentToJson(content c, JSONObject jo) throws JSONException, IOException {
         if(c instanceof classdesc) {
             //classdesc cl = (classdesc)c;
             // Member classes will be displayed as part of their enclosing
             // classes.
             //if(cl.isStaticMemberClass() || cl.isInnerClass()) {
-                return;
+        	//JSONObject jo2 = new JSONObject();
+        	//jo.put(((classdesc) c).name,jo2);
+            return jo;
             //}
         } else {
-            if(c instanceof JsonOutInterface)
-                ((JsonOutInterface)c).toJson(jo);
+            if(c instanceof instance)
+                ((instance)c).toJson(jo);
             else
-            	if(c instanceof JsonArrayOutInterface)
-            		((JsonArrayOutInterface)c).toJson(jo);
-            	else
-            		System.out.println("Unknown contentToJson:"+c+" class:"+c.getClass().getName());
+            	debug("Unknown contentToJson:"+c+" class:"+c.getClass().getName());
         }
+        return jo;
     }
  
 
@@ -1230,7 +1231,7 @@ public class jdeserialize {
                 Object o = c.getConstructor(new Class<?>[0]).newInstance(new Object[] {});
                 byte[] b = null;
                 JSONObject jo1 = new JSONObject();
-                jo0.append(c.getName(), jo1);
+                jo0.put(c.getName(), jo1);
                 try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
                 	ObjectOutputStream oos = new ObjectOutputStream(bos)) {
                 	oos.writeObject(o);
@@ -1240,8 +1241,8 @@ public class jdeserialize {
 				ByteArrayInputStream fis = new ByteArrayInputStream(b);
                 jd.run(fis, !go.hasOption("-noconnect"));
                 jd.dump(go);
-                jd.toJson(jo0);
-                System.out.println(jo0);
+                jd.toJson(jo1);
+                jd.debug(jo0.toString());
             } catch(EOFException eoe) {
                 debugerr("EOF error while attempting to decode file " + filename + ": " + eoe.getMessage());
                 eoe.printStackTrace();

@@ -9,7 +9,8 @@ import org.json.JSONObject;
  * non-array class, including the non-transient field values, for all classes in its
  * hierarchy and inner classes.
  */
-public class instance extends contentbase implements JsonOutInterface {
+public class instance extends contentbase {
+	public static boolean DEBUG = true;
     /**
      * Collection of field data, organized by class description.  
      */
@@ -39,25 +40,27 @@ public class instance extends contentbase implements JsonOutInterface {
      */
     public Map<classdesc, List<content>> annotations;
 
-	@Override
 	public void toJson(JSONObject json) {
         for(field f: fielddata.get(classdesc).keySet()) {
             Object o = fielddata.get(classdesc).get(f);
-        	System.out.println("instanceToJson classdesc:"+classdesc+" field:"+f+" object:"+o+" object class:"+o.getClass().getName());
+            if(DEBUG)
+            	System.out.println("instanceToJson classdesc:"+classdesc+" field:"+f+" object:"+o+" object class:"+o.getClass().getName());
             if(o instanceof content) {
                 content c = (content)o;
-                if(c instanceof JsonOutInterface) {
-                	json.append("type", f.type.getJavaType());
-                	((JsonOutInterface)c).toJson(json);
-                } else
+                if(c instanceof JsonOutInterface)
+                	((JsonOutInterface)c).toJson(json, f);
+                else
                 	if(c instanceof JsonArrayOutInterface)	
-                		((JsonArrayOutInterface)c).toJson(json);
+                		((JsonArrayOutInterface)c).toJson(json, f);
                 	else
-                		System.out.println("Unknown content:"+c+" class:"+c.getClass().getName());
-            } else {
-            	json.append("type", f.type.getJavaType());
-                json.append(f.name, o);
-            }
+                			if(DEBUG)
+                				System.out.println("Unknown content:"+c+" class:"+c.getClass().getName());
+            } //else {
+            	//if(DEBUG)
+            	//	System.out.println("Appending instance:"+o+" class:"+o.getClass().getName());
+            	//json.append("type", f.type.getJavaType());
+                //json.append(f.name, o);
+            //}
         }
 		
 	}
