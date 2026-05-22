@@ -2,8 +2,7 @@ package org.json.reflect;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,14 +10,13 @@ import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+
 import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.Map;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -90,7 +88,7 @@ public class HandlerClassLoader extends ClassLoader {
      */
     public static void connectToRemoteRepository() throws IOException, IllegalAccessException {
     	useEmbedded = false;
-		String hostName = InetAddress.getLocalHost().getHostName();
+		//String hostName = InetAddress.getLocalHost().getHostName();
     	//remoteRepository = new RelatrixKVClient(hostName, hostName, 9999);
     } 
     /**
@@ -101,7 +99,7 @@ public class HandlerClassLoader extends ClassLoader {
      */
     public static void connectToRemoteRepository(String remote) throws IOException, IllegalAccessException {
     	useEmbedded = false;
-		String hostName = InetAddress.getLocalHost().getHostName();
+		//String hostName = InetAddress.getLocalHost().getHostName();
     	//remoteRepository = new RelatrixKVClient(hostName, remote, 9999);
     } 
     /**
@@ -113,7 +111,7 @@ public class HandlerClassLoader extends ClassLoader {
      */
     public static void connectToRemoteRepository(String remote, int port) throws IOException, IllegalAccessException {
     	useEmbedded = false;
-		String hostName = InetAddress.getLocalHost().getHostName();
+		//String hostName = InetAddress.getLocalHost().getHostName();
     	//remoteRepository = new RelatrixKVClient(hostName, remote, port);
     } 
     /**
@@ -155,6 +153,11 @@ public class HandlerClassLoader extends ClassLoader {
         }
         throw new ClassNotFoundException(name+" not found in HandlerClassLoader.findClass()");
     }
+    
+    public synchronized Class findLoaded(String className) {
+    	return findLoadedClass(className);
+    }
+    
     /**
     * loadClass will attempt to load the named class, If not found in cache
     * or system or user, will attempt to use Hastable of name and bytecodes
