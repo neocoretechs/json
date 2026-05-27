@@ -10,7 +10,7 @@ import org.json.JSONObject;
  * hierarchy and inner classes.
  */
 public class instance extends contentbase {
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
     /**
      * Collection of field data, organized by class description.  
      */

@@ -24,7 +24,7 @@ import org.json.JSONObject;
 */
 public class FieldNamesAndConstructors implements Serializable {
 	private static final long serialVersionUID = -738720973959363650L;
-	private static boolean DEBUG = true;
+	private static boolean DEBUG = false;
 	public static boolean NOTIFY = false; // notify on field set or reflect fail, for debug
 	public static boolean ignoreTransient = true; // process transient fields?
     public transient Class<?> classClass;
